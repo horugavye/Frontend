@@ -633,7 +633,7 @@ export default function UserProfile() {
         setIsOwnProfile(false);
         // Make API call to get public profile
         console.log('Making request to backend for profile:', username);
-        const response = await axios.get(`${API_URL}/auth/profile/${username}`, {
+        const response = await axios.get(`${API_URL}/auth/profile/${username}/`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -1685,7 +1685,7 @@ export default function UserProfile() {
     cover_photo: profile?.cover_photo || '',
     username: profile?.username || 'username',
     name: profile?.name || 'User Name',
-    avatar: profile?.avatar || 'https://i.pravatar.cc/150?img=12',
+    avatar: profile?.avatar || '/default.jpg',
     bio: profile?.bio || 'No bio available.',
     location: profile?.location || 'Location',
     website: profile?.website || 'website.com',
