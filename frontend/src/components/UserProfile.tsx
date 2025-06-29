@@ -578,6 +578,9 @@ export default function UserProfile() {
       console.log('[fetchProfile] currentUser:', currentUser);
       console.log('[fetchProfile] username param:', username);
       console.log('[fetchProfile] token:', localStorage.getItem('access_token'));
+      console.log('[fetchProfile] API_URL:', API_URL);
+      console.log('[fetchProfile] VITE_API_URL:', import.meta.env.VITE_API_URL);
+      console.log('[fetchProfile] Environment:', import.meta.env.MODE);
 
       // Check if token exists
       const token = localStorage.getItem('access_token');
@@ -590,8 +593,12 @@ export default function UserProfile() {
       if (currentUser && username === currentUser.username) {
         console.log('[fetchProfile] Fetching own profile');
         setIsOwnProfile(true);
+        
+        const profileUrl = `${API_URL}/auth/profile/`;
+        console.log('[fetchProfile] Making request to:', profileUrl);
+        
         // Make API call to get own profile
-        const response = await axios.get(`${API_URL}/auth/profile`, {
+        const response = await axios.get(profileUrl, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
