@@ -347,6 +347,10 @@ const Communities: FC = () => {
                           src={community.bannerUrl}
                           alt={community.name}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/default_community_banner.png';
+                          }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                         <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
@@ -406,6 +410,10 @@ const Communities: FC = () => {
                           src={community.bannerUrl}
                           alt={community.name}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = '/default_community_banner.png';
+                          }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                         <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">

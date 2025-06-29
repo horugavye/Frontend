@@ -215,7 +215,7 @@ const UpdateGroupModal: FC<UpdateGroupModalProps> = ({
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = groupAvatar || `${import.meta.env.VITE_API_URL}/media/avatars/default.jpg`;
+                      target.src = '/default.jpg';
                     }}
                   />
                 ) : groupAvatar ? (
@@ -225,7 +225,7 @@ const UpdateGroupModal: FC<UpdateGroupModalProps> = ({
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = `${import.meta.env.VITE_API_URL}/media/avatars/default.jpg`;
+                      target.src = '/default.jpg';
                     }}
                   />
                 ) : (

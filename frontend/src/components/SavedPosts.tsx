@@ -72,7 +72,7 @@ const SavedPosts: FC = () => {
             ? `${post.post.author.first_name} ${post.post.author.last_name}`
             : post.post.author?.name || 'Anonymous User',
           username: post.post.author?.username || 'anonymous',
-          avatarUrl: post.post.author?.avatar || 'https://ui-avatars.com/api/?background=random',
+          avatarUrl: post.post.author?.avatar || '/default.jpg',
           personalityTags: post.post.author?.personality_tags?.map((tag: any) => ({
             name: tag.name,
             color: tag.color || 'bg-purple-500 text-white'

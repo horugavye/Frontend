@@ -87,6 +87,17 @@ interface CommentCardProps {
   onReplyRatingChange?: (commentId: number, replyId: number, rating: number) => void;
 }
 
+// Default avatar fallback
+const DEFAULT_AVATAR = '/default.jpg';  // Points to frontend/public/default.jpg
+
+// Helper function to get avatar URL with fallback
+const getAvatarUrl = (avatarUrl: string | null | undefined): string => {
+  if (!avatarUrl || avatarUrl === '') {
+    return DEFAULT_AVATAR;
+  }
+  return avatarUrl.startsWith('http') ? avatarUrl : `${import.meta.env.VITE_API_URL}${avatarUrl}`;
+};
+
 const CommentCard: React.FC<CommentCardProps> = ({ 
   comment, 
   onReply, 
@@ -276,9 +287,15 @@ const CommentCard: React.FC<CommentCardProps> = ({
           <div key={reply.id} className="flex items-start gap-4">
             <div className="relative">
               <img
-                src={reply.author?.avatar || 'https://i.pravatar.cc/150?img=12'}
+                src={getAvatarUrl(reply.author?.avatar)}
                 alt={reply.author?.name || 'User'}
                 className="w-8 h-8 rounded-full ring-2 ring-purple-500 dark:ring-purple-400"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (target.src !== DEFAULT_AVATAR) {
+                    target.src = DEFAULT_AVATAR;
+                  }
+                }}
               />
             </div>
             <div className="flex-1">
@@ -347,9 +364,15 @@ const CommentCard: React.FC<CommentCardProps> = ({
     <div className="flex items-start gap-4 group">
       <div className="relative">
         <img
-          src={comment.author?.avatar || 'https://i.pravatar.cc/150?img=12'}
+          src={getAvatarUrl(comment.author?.avatar)}
           alt={comment.author?.name || 'User'}
           className="w-10 h-10 rounded-full ring-2 ring-purple-500 dark:ring-purple-400"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            if (target.src !== DEFAULT_AVATAR) {
+              target.src = DEFAULT_AVATAR;
+            }
+          }}
         />
         {comment.author?.badges?.map((badge, index) => (
           <span

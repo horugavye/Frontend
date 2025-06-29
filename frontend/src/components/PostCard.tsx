@@ -29,6 +29,17 @@ import api from '../utils/axios';
 import { API_ENDPOINTS } from '../config/api';
 import { useTheme } from '../context/ThemeContext';
 
+// Default avatar fallback
+const DEFAULT_AVATAR = '/default.jpg';
+
+// Helper function to get avatar URL with fallback
+const getAvatarUrl = (avatarUrl: string | null | undefined): string => {
+  if (!avatarUrl || avatarUrl === '') {
+    return DEFAULT_AVATAR;
+  }
+  return avatarUrl.startsWith('http') ? avatarUrl : `${import.meta.env.VITE_API_URL}${avatarUrl}`;
+};
+
 interface PersonalityTag {
   name: string;
   color: string;
@@ -882,10 +893,16 @@ const PostCard: FC<PostCardProps> = ({
         {/* Author info */}
         <div className="flex items-center space-x-2 sm:space-x-3">
           <img
-            src={author.avatarUrl}
+            src={getAvatarUrl(author.avatarUrl)}
             alt={author.name}
             className="w-8 h-8 sm:w-10 sm:h-10 rounded-full cursor-pointer"
             onClick={handleAuthorClick}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              if (target.src !== DEFAULT_AVATAR) {
+                target.src = DEFAULT_AVATAR;
+              }
+            }}
           />
           <div>
             <div className="flex items-center space-x-1 sm:space-x-2">
@@ -964,9 +981,15 @@ const PostCard: FC<PostCardProps> = ({
                 >
                   <div className="flex items-center space-x-2 sm:space-x-3">
                     <img
-                      src={user.avatarUrl}
+                      src={getAvatarUrl(user.avatarUrl)}
                       alt={user.name}
                       className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 rounded-full ring-2 ring-purple-500/20"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        if (target.src !== DEFAULT_AVATAR) {
+                          target.src = DEFAULT_AVATAR;
+                        }
+                      }}
                     />
                     <div className="min-w-0 flex-1">
                       <h4 className="text-gray-900 dark:text-gray-100 font-medium truncate text-xs sm:text-sm lg:text-base">{user.name}</h4>
@@ -1137,9 +1160,15 @@ const PostCard: FC<PostCardProps> = ({
           {/* Comment Input */}
           <div className="flex items-start space-x-2">
             <img
-              src={author.avatarUrl}
+              src={getAvatarUrl(author.avatarUrl)}
               alt="Your avatar"
               className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 rounded-full"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                if (target.src !== DEFAULT_AVATAR) {
+                  target.src = DEFAULT_AVATAR;
+                }
+              }}
             />
             <div className="flex-1 relative">
               <div className="flex items-center space-x-1 sm:space-x-2">
@@ -1186,9 +1215,15 @@ const PostCard: FC<PostCardProps> = ({
               onClick={(e) => e.stopPropagation()} // Prevent redirection when clicking comment
             >
               <img
-                src={topComment.author.avatarUrl}
+                src={getAvatarUrl(topComment.author.avatarUrl)}
                 alt={topComment.author.name}
                 className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 rounded-full"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  if (target.src !== DEFAULT_AVATAR) {
+                    target.src = DEFAULT_AVATAR;
+                  }
+                }}
               />
               <div className="flex-1">
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 sm:p-2.5 lg:p-3">

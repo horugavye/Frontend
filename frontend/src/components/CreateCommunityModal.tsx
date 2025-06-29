@@ -89,6 +89,8 @@ const CreateCommunityModal: FC<CreateCommunityModalProps> = ({ isOpen, onClose, 
     const file = e.target.files?.[0];
     if (!file) return;
 
+    console.log('File selected:', { name: file.name, type: file.type, size: file.size });
+
     // Validate file type
     if (!file.type.startsWith('image/')) {
       setError('Please upload an image file');
@@ -103,13 +105,20 @@ const CreateCommunityModal: FC<CreateCommunityModalProps> = ({ isOpen, onClose, 
 
     // Create preview URL
     const previewUrl = URL.createObjectURL(file);
+    console.log('Preview URL created:', previewUrl);
+    
     if (type === 'icon') {
       setCommunityImagePreview(previewUrl);
       setFormData(prev => ({ ...prev, icon: file }));
+      console.log('Icon file set:', file);
     } else {
       setBannerPreview(previewUrl);
       setFormData(prev => ({ ...prev, banner: file }));
+      console.log('Banner file set:', file);
     }
+    
+    // Clear any previous errors
+    setError(null);
   };
 
   const handleDeleteImage = (type: 'icon' | 'banner') => {
@@ -276,32 +285,43 @@ const CreateCommunityModal: FC<CreateCommunityModalProps> = ({ isOpen, onClose, 
                 </label>
                 <div 
                   onClick={() => communityImageInputRef.current?.click()}
-                  className="relative aspect-square w-full border border-dashed border-gray-300 dark:border-dark-border rounded-2xl hover:border-purple-500 dark:hover:border-purple-500 cursor-pointer transition-all overflow-hidden group bg-gray-50 dark:bg-dark-card-hover hover:bg-gray-100 dark:hover:bg-dark-card-hover/80"
+                  className="relative aspect-[3/1] w-full border border-dashed border-gray-300 dark:border-dark-border rounded-2xl hover:border-purple-500 dark:hover:border-purple-500 cursor-pointer transition-all overflow-hidden group bg-gray-50 dark:bg-dark-card-hover hover:bg-gray-100 dark:hover:bg-dark-card-hover/80"
                 >
                   {communityImagePreview ? (
-                    typeof communityImagePreview === 'string' && communityImagePreview.length === 2 ? (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-blue-600 group-hover:from-purple-600 group-hover:to-blue-700 transition-all">
-                        <span className="text-4xl transform group-hover:scale-110 transition-transform">{communityImagePreview}</span>
+                    <div className="relative w-full h-full group-hover:opacity-90 transition-opacity">
+                      <img 
+                        src={communityImagePreview} 
+                        alt="Community image preview" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error('Image preview failed to load:', communityImagePreview);
+                          setError('Failed to load image preview');
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium">
+                          Change Image
+                        </span>
                       </div>
-                    ) : (
-                      <div className="relative w-full h-full group-hover:opacity-90 transition-opacity">
-                        <img 
-                          src={communityImagePreview} 
-                          alt="Community image preview" 
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                          <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium">
-                            Change Image
-                          </span>
-                        </div>
-                      </div>
-                    )
+                      {/* Delete button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteImage('icon');
+                        }}
+                        className="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors shadow-lg"
+                        title="Remove image"
+                      >
+                        ×
+                      </button>
+                    </div>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 dark:text-dark-text-secondary group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors">
                       <PhotoIcon className="w-8 h-8 mb-1 transform group-hover:scale-110 transition-transform" />
                       <span className="text-xs font-medium">Upload image</span>
                       <span className="text-[10px] mt-0.5">256x256px</span>
+                      <span className="text-[10px] mt-1 text-gray-300 dark:text-gray-600">Click to upload</span>
                     </div>
                   )}
                   <input
@@ -329,18 +349,35 @@ const CreateCommunityModal: FC<CreateCommunityModalProps> = ({ isOpen, onClose, 
                         src={bannerPreview} 
                         alt="Community banner preview" 
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error('Banner preview failed to load:', bannerPreview);
+                          setError('Failed to load banner preview');
+                        }}
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                         <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium">
                           Change Banner
                         </span>
                       </div>
+                      {/* Delete button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteImage('banner');
+                        }}
+                        className="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors shadow-lg"
+                        title="Remove banner"
+                      >
+                        ×
+                      </button>
                     </div>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 dark:text-dark-text-secondary group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors">
                       <PhotoIcon className="w-8 h-8 mb-1 transform group-hover:scale-110 transition-transform" />
                       <span className="text-xs font-medium">Upload banner</span>
                       <span className="text-[10px] mt-0.5">1200x400px</span>
+                      <span className="text-[10px] mt-1 text-gray-300 dark:text-gray-600">Click to upload</span>
                     </div>
                   )}
                   <input

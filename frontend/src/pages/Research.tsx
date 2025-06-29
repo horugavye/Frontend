@@ -5,6 +5,66 @@ import SuggestedCommunities from '../components/aisuggested';
 import PostCard from '../components/PostCard';
 import { UserPlusIcon, ArrowPathIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
+// Helper function to handle avatar URLs with fallback to /default.png
+const getAvatarUrl = (avatarPath: string) => {
+  if (avatarPath && avatarPath.startsWith('http')) return avatarPath;
+  return '/default.png';
+};
+
+// Helper function to handle community icon URLs with fallback
+const getCommunityIconUrl = (iconPath: string | null) => {
+  // Return fallback if no icon path provided
+  if (!iconPath) {
+    return '/default_community_icon.png';
+  }
+  
+  // Return fallback if icon path is empty string
+  if (iconPath.trim() === '') {
+    return '/default_community_icon.png';
+  }
+  
+  // Handle external URLs
+  if (iconPath.startsWith('http')) {
+    return iconPath;
+  }
+  
+  // Handle relative paths - if it starts with /media/, it's already a full path
+  if (iconPath.startsWith('/media/')) {
+    return `${API_BASE_URL}${iconPath}`;
+  }
+  
+  // Handle relative paths without /media/ prefix
+  const cleanPath = iconPath.startsWith('/') ? iconPath.substring(1) : iconPath;
+  return `${API_BASE_URL}/media/${cleanPath}`;
+};
+
+// Helper function to handle community banner URLs with fallback
+const getCommunityBannerUrl = (bannerPath: string | null) => {
+  // Return fallback if no banner path provided
+  if (!bannerPath) {
+    return '/default_community_banner.png';
+  }
+  
+  // Return fallback if banner path is empty string
+  if (bannerPath.trim() === '') {
+    return '/default_community_banner.png';
+  }
+  
+  // Handle external URLs
+  if (bannerPath.startsWith('http')) {
+    return bannerPath;
+  }
+  
+  // Handle relative paths - if it starts with /media/, it's already a full path
+  if (bannerPath.startsWith('/media/')) {
+    return `${API_BASE_URL}${bannerPath}`;
+  }
+  
+  // Handle relative paths without /media/ prefix
+  const cleanPath = bannerPath.startsWith('/') ? bannerPath.substring(1) : bannerPath;
+  return `${API_BASE_URL}/media/${cleanPath}`;
+};
+
 interface Person {
   id: number;
   username: string;
@@ -118,7 +178,7 @@ const Research: React.FC = () => {
           id: person.id,
           username: person.username,
           name: person.name,
-          avatarUrl: person.avatarUrl,
+          avatarUrl: getAvatarUrl(person.avatarUrl),
           role: person.role,
           personality_tags: person.personality_tags || [],
           connection_status: person.connection_status || 'connect',
@@ -142,7 +202,21 @@ const Research: React.FC = () => {
           headers,
         });
         const commData = await commRes.json();
-        setCommunities(Array.isArray(commData.results) ? commData.results : Array.isArray(commData) ? commData : []); // DRF pagination support
+        const communitiesData = Array.isArray(commData.results) ? commData.results : Array.isArray(commData) ? commData : [];
+        
+        // Transform communities data to match Community interface
+        const transformedCommunities = communitiesData.map((community: any) => ({
+          id: community.id,
+          name: community.name,
+          description: community.description,
+          slug: community.slug,
+          bannerUrl: community.banner || null,
+          icon: community.icon || null,
+          topics: community.topics || [],
+          total_members: community.total_members || community.members_count || 0,
+        }));
+        
+        setCommunities(transformedCommunities);
         
         // Fetch posts
         const postsRes = await fetch(`/api/posts/?search=${encodeURIComponent(query)}`, {
@@ -547,7 +621,12 @@ const Research: React.FC = () => {
                         <div key={item.id}>
                           <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 shadow-sm transition-colors duration-200">
                             <div className="flex items-center">
-                              <img src={item.avatarUrl} alt={item.name} className="w-12 h-12 rounded-full mr-4" />
+                              <img 
+                                src={item.avatarUrl} 
+                                alt={item.name} 
+                                className="w-12 h-12 rounded-full mr-4"
+                                onError={(e) => { (e.target as HTMLImageElement).src = '/default.png'; }}
+                              />
                               <div className="flex-1">
                                 <div 
                                   className="text-lg font-semibold text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 cursor-pointer transition-colors duration-200"
@@ -650,11 +729,27 @@ const Research: React.FC = () => {
                             className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden hover:shadow-md transition-all border border-gray-200 dark:border-gray-700 cursor-pointer"
                           >
                             <div className="h-32 relative">
-                              <img src={item.bannerUrl} alt={item.name} className="w-full h-full object-cover" />
+                              <img 
+                                src={getCommunityBannerUrl(item.bannerUrl)} 
+                                alt={item.name} 
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/default_community_banner.png';
+                                }}
+                              />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                  <img src={item.icon} alt={item.name} className="w-10 h-10 rounded-full border-2 border-white shadow" />
+                                  <img 
+                                    src={getCommunityIconUrl(item.icon)} 
+                                    alt={item.name} 
+                                    className="w-10 h-10 rounded-full border-2 border-white shadow"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.src = '/default_community_icon.png';
+                                    }}
+                                  />
                                   <h3 className="text-lg font-medium text-white">{item.name}</h3>
                                 </div>
                               </div>
@@ -716,7 +811,7 @@ const Research: React.FC = () => {
                             content={item.snippet}
                             author={{
                               name: item.author?.name || "",
-                              avatarUrl: item.author?.avatarUrl || "",
+                              avatarUrl: getAvatarUrl(item.author?.avatarUrl || ""),
                               personalityTags: item.author?.personality_tags || [],
                               role: item.author?.role || "",
                               username: item.author?.username || ""
@@ -787,7 +882,12 @@ const Research: React.FC = () => {
                         <div key={item.id}>
                           <div className="bg-white dark:bg-dark-card rounded-xl p-4 shadow-sm transition-colors duration-200">
                             <div className="flex items-center">
-                              <img src={item.avatarUrl} alt={item.name} className="w-12 h-12 rounded-full mr-4" />
+                              <img 
+                                src={item.avatarUrl} 
+                                alt={item.name} 
+                                className="w-12 h-12 rounded-full mr-4"
+                                onError={(e) => { (e.target as HTMLImageElement).src = '/default.png'; }}
+                              />
                               <div className="flex-1">
                                 <div 
                                   className="text-lg font-semibold text-gray-900 dark:text-white hover:text-purple-600 dark:hover:text-purple-400 cursor-pointer transition-colors duration-200"
@@ -890,11 +990,27 @@ const Research: React.FC = () => {
                           className="bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden hover:shadow-md transition-all border border-gray-200 dark:border-gray-700 cursor-pointer"
                         >
                           <div className="h-32 relative">
-                            <img src={item.bannerUrl} alt={item.name} className="w-full h-full object-cover" />
+                            <img 
+                              src={getCommunityBannerUrl(item.bannerUrl)} 
+                              alt={item.name} 
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.src = '/default_community_banner.png';
+                              }}
+                            />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                             <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
                               <div className="flex items-center gap-2">
-                                <img src={item.icon} alt={item.name} className="w-10 h-10 rounded-full border-2 border-white shadow" />
+                                <img 
+                                  src={getCommunityIconUrl(item.icon)} 
+                                  alt={item.name} 
+                                  className="w-10 h-10 rounded-full border-2 border-white shadow"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.src = '/default_community_icon.png';
+                                  }}
+                                />
                                 <h3 className="text-lg font-medium text-white">{item.name}</h3>
                               </div>
                             </div>
@@ -955,7 +1071,7 @@ const Research: React.FC = () => {
                           content={item.snippet}
                           author={{
                             name: item.author?.name || "",
-                            avatarUrl: item.author?.avatarUrl || "",
+                            avatarUrl: getAvatarUrl(item.author?.avatarUrl || ""),
                             personalityTags: item.author?.personality_tags || [],
                             role: item.author?.role || "",
                             username: item.author?.username || ""

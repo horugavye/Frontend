@@ -5,7 +5,7 @@ import api from '../utils/api';
 
 // Update API_BASE_URL to use local development URL
 const API_BASE_URL = import.meta.env.VITE_API_URL;
-const DEFAULT_AVATAR = '/default-avatar.png';
+const DEFAULT_AVATAR = '/default.jpg';
 
 interface User {
   id: string;
@@ -165,7 +165,7 @@ const ForwardMessageModal: FC<ForwardMessageModalProps> = ({
                 >
                   <div className="relative">
                     <img
-                      src={conv.user?.avatarUrl || conv.group?.avatarUrl || 'https://ui-avatars.com/api/?background=random'}
+                      src={conv.user?.avatarUrl || conv.group?.avatarUrl || '/default.jpg'}
                       alt={conv.name}
                       className="w-10 h-10 rounded-full border-2 border-purple-400"
                     />

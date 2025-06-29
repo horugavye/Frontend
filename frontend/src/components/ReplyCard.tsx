@@ -14,6 +14,17 @@ import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { useWebSocket } from '../context/WebSocketContext';
 
+// Default avatar fallback
+const DEFAULT_AVATAR = '/default.jpg';
+
+// Helper function to get avatar URL with fallback
+const getAvatarUrl = (avatarUrl: string | null | undefined): string => {
+  if (!avatarUrl || avatarUrl === '') {
+    return DEFAULT_AVATAR;
+  }
+  return avatarUrl.startsWith('http') ? avatarUrl : `${import.meta.env.VITE_API_URL}${avatarUrl}`;
+};
+
 interface User {
   id: number;
   username: string;
@@ -226,9 +237,15 @@ const ReplyCard: React.FC<ReplyCardProps> = ({
     <div className="flex items-start gap-4">
       <div className="relative">
         <img
-          src={reply.author?.avatar || 'https://i.pravatar.cc/150?img=12'}
+          src={getAvatarUrl(reply.author?.avatar)}
           alt={reply.author?.name || 'User'}
           className="w-8 h-8 rounded-full ring-2 ring-purple-500 dark:ring-purple-400"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            if (target.src !== DEFAULT_AVATAR) {
+              target.src = DEFAULT_AVATAR;
+            }
+          }}
         />
       </div>
       <div className="flex-1">

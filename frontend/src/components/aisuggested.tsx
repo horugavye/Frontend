@@ -26,6 +26,12 @@ const mockSkills = [
   ['JavaScript', 'Backend'],
 ];
 
+// Helper function to handle avatar URLs with fallback to /default.png
+const getAvatarUrl = (avatarPath: string) => {
+  if (avatarPath && avatarPath.startsWith('http')) return avatarPath;
+  return '/default.png';
+};
+
 const SuggestedFriends: FC = () => {
   const [aiSuggestedFriends, setAiSuggestedFriends] = useState<FriendSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +51,7 @@ const SuggestedFriends: FC = () => {
         name: s.suggested_user.name || s.suggested_user.username,
         mutualFriends: s.mutual_connections || 0,
         bio: s.suggested_user.role || '',
-        avatarUrl: s.suggested_user.avatarUrl || s.suggested_user.avatar || '',
+        avatarUrl: getAvatarUrl(s.suggested_user.avatarUrl || s.suggested_user.avatar || ''),
         aiReason: (s.match_highlights && s.match_highlights[0]) || 'Similar educational background and professional trajectory in tech',
         username: s.suggested_user.username ? `@${s.suggested_user.username}` : '@username',
         location: s.suggested_user.location || 'Austin, TX',
@@ -136,6 +142,7 @@ const SuggestedFriends: FC = () => {
                     alt={friend.name}
                     className="w-12 h-12 rounded-full object-cover border-2 border-purple-300 shadow-md"
                     loading="lazy"
+                    onError={e => { (e.target as HTMLImageElement).src = '/default.png'; }}
                   />
                 </div>
                 <div className="flex-1 min-w-0">

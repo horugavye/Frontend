@@ -36,7 +36,7 @@ const ChevronRight = () => (
 );
 
 const getAvatarUrl = (avatar: string) => {
-  if (!avatar || avatar === '' || avatar === '/media/avatars/profile-default-icon-2048x2045-u3j7s5nj.png') {
+  if (!avatar || avatar === '' || avatar === '/default.jpg') {
     return undefined;
   }
   

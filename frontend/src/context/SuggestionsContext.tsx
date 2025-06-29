@@ -117,7 +117,7 @@ export const SuggestionsProvider: React.FC<{ children: React.ReactNode }> = ({ c
           id: suggestedUser.id.toString(),
           user: {
             name: `${suggestedUser.first_name || ''} ${suggestedUser.last_name || ''}`.trim() || suggestedUser.username,
-            avatarUrl: suggestedUser.avatar || 'https://i.pravatar.cc/150?img=5',
+            avatarUrl: suggestedUser.avatar || '/default.jpg',
             role: suggestedUser.role || 'AI Professional',
             personalityTags: suggestedUser.personality_tags || [],
             badges: suggestedUser.badges || [],

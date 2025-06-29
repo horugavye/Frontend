@@ -1105,7 +1105,7 @@ const Stories: FC = () => {
                                 ? (firstStory.author.avatar.startsWith('/')
                                     ? BACKEND_BASE_URL + firstStory.author.avatar
                                     : firstStory.author.avatar)
-                                : BACKEND_BASE_URL + '/media/avatars/default.jpg'
+                                : '/default.jpg'
                             }
                             alt={firstStory.author.name}
                             className="w-6 h-6 sm:w-8 sm:h-8 rounded-full border"
@@ -1844,7 +1844,7 @@ const Stories: FC = () => {
                           ? (groupedStories[activeUserIndex][activeUserStoryIndex].author.avatar.startsWith('/')
                               ? BACKEND_BASE_URL + groupedStories[activeUserIndex][activeUserStoryIndex].author.avatar
                               : groupedStories[activeUserIndex][activeUserStoryIndex].author.avatar)
-                          : BACKEND_BASE_URL + '/media/avatars/default.jpg'
+                          : '/default.jpg'
                       }
                       alt={groupedStories[activeUserIndex][activeUserStoryIndex].author.name}
                       className="w-12 h-12 rounded-full border-2 border-white"
@@ -2142,7 +2142,7 @@ const Stories: FC = () => {
                           ? (userStoriesModal.stories[userStoriesModal.activeIndex].author.avatar.startsWith('/')
                               ? BACKEND_BASE_URL + userStoriesModal.stories[userStoriesModal.activeIndex].author.avatar
                               : userStoriesModal.stories[userStoriesModal.activeIndex].author.avatar)
-                          : BACKEND_BASE_URL + '/media/avatars/default.jpg'
+                          : '/default.jpg'
                       }
                       alt={userStoriesModal.stories[userStoriesModal.activeIndex].author.name}
                       className="w-12 h-12 rounded-full border-2 border-white"

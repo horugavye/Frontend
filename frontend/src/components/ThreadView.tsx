@@ -9,7 +9,7 @@ import MessageInfoModal from './MessageInfoModal';
 import ForwardMessageModal from './ForwardMessageModal';
 import api from '../utils/api';
 
-const DEFAULT_AVATAR = '/default-avatar.png';
+const DEFAULT_AVATAR = '/default.jpg';
 
 interface ThreadViewProps {
   thread: MessageThread;

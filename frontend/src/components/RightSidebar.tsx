@@ -772,7 +772,7 @@ const RightSidebar: FC<RightSidebarProps> = ({
                 <div key={member.id} className="group flex items-center space-x-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-card-hover transition-colors duration-200">
                   <div className="relative">
                     <img
-                      src={member.avatarUrl || 'https://via.placeholder.com/150'}
+                      src={member.avatarUrl || '/default.jpg'}
                       alt={member.name}
                       className="w-12 h-12 rounded-full object-cover ring-2 ring-purple-500/20"
                     />

@@ -30,8 +30,16 @@ import { API_ENDPOINTS } from '../config/api';
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // Helper function to construct proper banner URLs
-const getBannerUrl = (bannerPath: string | null): string | null => {
-  if (!bannerPath) return null;
+const getBannerUrl = (bannerPath: string | null): string => {
+  // Return fallback if no banner path provided
+  if (!bannerPath) {
+    return '/default_community_banner.png';
+  }
+  
+  // Return fallback if banner path is empty string
+  if (bannerPath.trim() === '') {
+    return '/default_community_banner.png';
+  }
   
   // If it's already a full URL, return it as is
   if (bannerPath.startsWith('http')) {
@@ -49,8 +57,16 @@ const getBannerUrl = (bannerPath: string | null): string | null => {
 };
 
 // Helper function to construct proper icon URLs
-const getIconUrl = (iconPath: string | null): string | null => {
-  if (!iconPath) return null;
+const getIconUrl = (iconPath: string | null): string => {
+  // Return fallback if no icon path provided
+  if (!iconPath) {
+    return '/default_community_icon.png';
+  }
+  
+  // Return fallback if icon path is empty string
+  if (iconPath.trim() === '') {
+    return '/default_community_icon.png';
+  }
   
   // If it's already a full URL, return it as is
   if (iconPath.startsWith('http')) {
@@ -83,8 +99,8 @@ interface PopularCommunity {
   description: string;
   members: number;
   icon: string;
-  iconUrl: string | null;
-  bannerUrl?: string;
+  iconUrl: string;
+  bannerUrl: string;
   category: string;
   slug?: string;
   is_member?: boolean;
@@ -449,9 +465,8 @@ const Discover: FC = () => {
                 alt={`${community.name} banner`}
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                 onError={(e) => {
-                  // Fallback to gradient background if image fails to load
                   const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
+                  target.src = '/default_community_banner.png';
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
@@ -473,6 +488,10 @@ const Discover: FC = () => {
                 src={community.iconUrl}
                 alt={`${community.name} icon`}
                 className="w-full h-full object-cover rounded-lg sm:rounded-xl"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/default_community_icon.png';
+                }}
               />
             </div>
           </div>

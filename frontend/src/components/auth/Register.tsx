@@ -79,14 +79,14 @@ const Register: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('Validation check:', { username, email, password, confirmPassword, interests, personalityTags });
+    console.log('Validation check:', { username, email, password, confirmPassword, interests, personalityTags, bio, location });
     if (!personalityTags || personalityTags.length === 0) {
       console.warn('No personality tags selected:', personalityTags);
     }
     const hasValidInterests = Array.isArray(interests) && interests.filter(i => i && i.trim()).length > 0;
     const hasValidTags = Array.isArray(personalityTags) && personalityTags.filter(t => t && t.name && t.name.trim()).length > 0;
-    if (!username || !email || !password || !confirmPassword || !hasValidInterests || !hasValidTags) {
-      setError('Please complete all required fields, including at least one interest and one personality tag.');
+    if (!username || !email || !password || !confirmPassword || !bio || !location || !hasValidInterests || !hasValidTags) {
+      setError('Please complete all required fields, including bio, location, at least one interest and one personality tag.');
       return;
     }
 
@@ -98,10 +98,6 @@ const Register: React.FC = () => {
     const usernamePattern = /^[\w.@+-]+$/;
     if (!usernamePattern.test(username)) {
       setError('Username may contain only letters, numbers, and @/./+/-/_ characters.');
-      return;
-    }
-    if (!bio || !location) {
-      setError('Please fill in all required fields, including bio and location.');
       return;
     }
 
@@ -171,10 +167,22 @@ const Register: React.FC = () => {
 
   const handleNext = () => {
     // Validate step 1 fields
-    if (!fullName || !email) {
-      setError('Please fill in your full name and email address');
+    if (!fullName || !email || !username || !password || !confirmPassword || !bio || !location) {
+      setError('Please fill in all required fields: Full Name, Email, Username, Password, Confirm Password, Bio, and Location');
       return;
     }
+    
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    const usernamePattern = /^[\w.@+-]+$/;
+    if (!usernamePattern.test(username)) {
+      setError('Username may contain only letters, numbers, and @/./+/-/_ characters.');
+      return;
+    }
+    
     setError('');
     setStep(2);
   };
@@ -262,11 +270,11 @@ const Register: React.FC = () => {
                           value={fullName}
                           onChange={e => setFullName(e.target.value)}
                           className="w-full pl-10 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-dark-card-hover border border-gray-200 dark:border-dark-border rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                          placeholder="Full Name"
+                          placeholder="Full Name *"
                         />
                       </div>
                       <div className="relative">
-                        <label htmlFor="username" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
+                        <label htmlFor="username" className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username <span className="text-red-500">*</span></label>
                         <input
                           id="username"
                           name="username"
@@ -276,7 +284,7 @@ const Register: React.FC = () => {
                           onChange={e => setUsername(e.target.value)}
                           pattern="[\w.@+-]+"
                           className="w-full pl-3 sm:pl-4 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-dark-card-hover border border-gray-200 dark:border-dark-border rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                          placeholder="Username (letters, numbers, @/./+/-/_)"
+                          placeholder="Username (letters, numbers, @/./+/-/_) *"
                         />
                       </div>
                       <div className="relative">
@@ -290,7 +298,7 @@ const Register: React.FC = () => {
                           value={email}
                           onChange={e => setEmail(e.target.value)}
                           className="w-full pl-10 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-dark-card-hover border border-gray-200 dark:border-dark-border rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                          placeholder="Email Address"
+                          placeholder="Email Address *"
                         />
                       </div>
                       <div className="relative">
@@ -302,7 +310,7 @@ const Register: React.FC = () => {
                           value={password}
                           onChange={e => setPassword(e.target.value)}
                           className="w-full pl-3 sm:pl-4 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-dark-card-hover border border-gray-200 dark:border-dark-border rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                          placeholder="Password"
+                          placeholder="Password *"
                         />
                         {passwordStrength && (
                           <p className={`mt-1 text-xs ${passwordStrength === 'Strong password!' ? 'text-green-600' : 'text-red-500'}`}>{passwordStrength}</p>
@@ -317,7 +325,7 @@ const Register: React.FC = () => {
                           value={confirmPassword}
                           onChange={e => setConfirmPassword(e.target.value)}
                           className="w-full pl-3 sm:pl-4 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-dark-card-hover border border-gray-200 dark:border-dark-border rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                          placeholder="Confirm Password"
+                          placeholder="Confirm Password *"
                         />
                       </div>
                       <div className="relative">
@@ -338,10 +346,11 @@ const Register: React.FC = () => {
                           id="bio"
                           name="bio"
                           rows={3}
+                          required
                           value={bio}
                           onChange={e => setBio(e.target.value)}
                           className="w-full pl-10 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-dark-card-hover border border-gray-200 dark:border-dark-border rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors resize-none"
-                          placeholder="Short Bio (optional)"
+                          placeholder="Short Bio *"
                         />
                       </div>
                       <div className="relative">
@@ -353,7 +362,7 @@ const Register: React.FC = () => {
                           value={location}
                           onChange={e => setLocation(e.target.value)}
                           className="w-full pl-3 sm:pl-4 pr-3 sm:pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-dark-card-hover border border-gray-200 dark:border-dark-border rounded-lg sm:rounded-xl text-sm sm:text-base text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                          placeholder="Location"
+                          placeholder="Location *"
                         />
                       </div>
                     </div>
@@ -420,7 +429,8 @@ const Register: React.FC = () => {
                     {error && personalityTags.length === 0 && (
                       <p className="text-xs text-red-500 mt-1">You must select at least one personality tag.</p>
                     )}
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Select or create at least one personality tag</p>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">Select or create at least one personality tag *</div>
+                    <p className="text-xs text-gray-400 italic mt-1">e.g. Creative, Analytical, Leader, Empathetic, Innovative, Detail-Oriented, Collaborative, Independent, Optimistic, Realistic, Adventurous, Cautious, Extroverted, Introverted, Logical, Intuitive</p>
                   </div>
                   {/* Interests */}
                   <div className="space-y-2">
@@ -452,7 +462,7 @@ const Register: React.FC = () => {
                       value={interests}
                       onChange={setInterests}
                     />
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Create at least one interest</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Create at least one interest *</p>
                     <p className="text-xs text-gray-400 italic mt-1">e.g. Music, Technology, Sports</p>
                     <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2">
                       {['Programming', 'AI', 'Machine Learning', 'Web Development', 'Mobile Development', 'Cloud Computing', 'Cybersecurity', 'Data Science', 'UI/UX Design', 'DevOps'].map(interest => {

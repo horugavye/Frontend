@@ -56,8 +56,37 @@ interface LeftSidebarProps {
   onNewGroup: () => void;
 }
 
-const DEFAULT_AVATAR = 'https://via.placeholder.com/150';
-const DEFAULT_GROUP_AVATAR = `${API_BASE_URL}/media/avatars/group.png`;
+const DEFAULT_AVATAR = '/default.jpg';
+const DEFAULT_GROUP_AVATAR = '/media/group.png';
+
+const getAvatarUrl = (user: any) => {
+  const DEFAULT_AVATAR = '/default.jpg';
+  const API_BASE_URL = import.meta.env.VITE_API_URL;
+  if (!user) return DEFAULT_AVATAR;
+  let avatarUrl = user.avatarUrl || user.avatar || user.avatar_url || user.user?.avatarUrl || user.user?.avatar || user.user?.avatar_url;
+  if (!avatarUrl || typeof avatarUrl !== 'string' || avatarUrl.trim() === '') {
+    return DEFAULT_AVATAR;
+  }
+  // Check for backend default avatar paths
+  const backendDefaults = [
+    '/media/avatars/default.jpeg',
+    '/media/avatars/default.jpg',
+    '/media/avatars/default.png',
+    'profile-default-icon-2048x2045-u3j7s5nj.png'
+  ];
+  for (const def of backendDefaults) {
+    if (avatarUrl.includes(def)) {
+      return DEFAULT_AVATAR;
+    }
+  }
+  if (avatarUrl.startsWith('http')) {
+    return avatarUrl;
+  }
+  if (avatarUrl.startsWith('/media')) {
+    return `${API_BASE_URL}${avatarUrl}`;
+  }
+  return `${API_BASE_URL}/media/${avatarUrl}`;
+};
 
 const LeftSidebar: FC<LeftSidebarProps> = ({
   conversations,
@@ -197,7 +226,7 @@ const LeftSidebar: FC<LeftSidebarProps> = ({
                     <div className="relative">
                       {conversation.user && (
                         <img
-                          src={conversation.user.avatarUrl || DEFAULT_AVATAR}
+                          src={getAvatarUrl(conversation.user)}
                           alt={conversation.user.name}
                           className="w-14 h-14 rounded-full object-cover ring-2 ring-purple-500/20"
                         />
@@ -278,7 +307,7 @@ const LeftSidebar: FC<LeftSidebarProps> = ({
                     <div className="relative">
                       {conversation.group && (
                         <img
-                          src={conversation.group.avatarUrl || DEFAULT_GROUP_AVATAR}
+                          src={getAvatarUrl(conversation.group)}
                           alt={conversation.group.name}
                           className="w-14 h-14 rounded-full object-cover ring-2 ring-blue-500/20"
                         />

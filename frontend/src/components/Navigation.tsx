@@ -150,7 +150,20 @@ const Navigation: FC = () => {
                     >
                       <span className="w-6 h-6 mr-3 flex items-center justify-center text-lg">
                         {community.icon.startsWith('http') ? (
-                          <img src={community.icon} alt={community.name} className="w-6 h-6 rounded-full object-cover" />
+                          <img 
+                            src={community.icon} 
+                            alt={community.name} 
+                            className="w-6 h-6 rounded-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              // Show the emoji fallback by updating the parent span
+                              const parentSpan = target.parentElement;
+                              if (parentSpan) {
+                                parentSpan.textContent = '🌟';
+                              }
+                            }}
+                          />
                         ) : (
                           community.icon
                         )}

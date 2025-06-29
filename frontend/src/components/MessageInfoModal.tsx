@@ -90,7 +90,7 @@ const MessageInfoModal: FC<MessageInfoModalProps> = ({ isOpen, onClose, message,
             </h4>
             <div className="flex items-center gap-3">
               <img
-                src={message.sender?.avatarUrl || 'https://ui-avatars.com/api/?background=random'}
+                src={message.sender?.avatarUrl || '/default.jpg'}
                 alt={message.sender?.name || 'Unknown'}
                 className="w-10 h-10 rounded-full border-2 border-purple-400"
               />

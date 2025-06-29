@@ -37,6 +37,17 @@ const MAX_FILES = 10;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
+// Default avatar fallback
+const DEFAULT_AVATAR = '/default.jpg';  // Points to frontend/public/default.jpg
+
+// Helper function to get avatar URL with fallback
+const getAvatarUrl = (avatarUrl: string | null | undefined): string => {
+  if (!avatarUrl || avatarUrl === '') {
+    return DEFAULT_AVATAR;
+  }
+  return avatarUrl.startsWith('http') ? avatarUrl : `${import.meta.env.VITE_API_URL}${avatarUrl}`;
+};
+
 const CreatePost: FC<CreatePostProps> = ({ onPostCreated }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState('');
@@ -286,9 +297,15 @@ const CreatePost: FC<CreatePostProps> = ({ onPostCreated }) => {
           <div className="relative group">
             <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full blur opacity-25 group-hover:opacity-40 transition duration-300"></div>
             <img
-              src={user?.avatar || "https://i.pravatar.cc/150?img=12"}
+              src={getAvatarUrl(user?.avatar)}
               alt="User avatar"
               className="relative w-12 h-12 rounded-full ring-2 ring-purple-500 dark:ring-purple-400 transition-transform duration-300 group-hover:scale-105"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                if (target.src !== DEFAULT_AVATAR) {
+                  target.src = DEFAULT_AVATAR;
+                }
+              }}
             />
             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white dark:border-dark-card animate-pulse"></div>
           </div>

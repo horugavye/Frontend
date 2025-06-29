@@ -58,8 +58,8 @@ import { MessageGroup, ConversationMessages } from '../types/messenger';
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // Add API base URL configuration
-const DEFAULT_AVATAR = `${API_BASE_URL}/media/avatars/default.jpg`;
-const DEFAULT_GROUP_AVATAR = `${API_BASE_URL}/media/avatars/group.png`;
+const DEFAULT_AVATAR = '/default.jpg';
+const DEFAULT_GROUP_AVATAR = '/media/group.png';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -1259,17 +1259,31 @@ const MessengerUI = () => {
   };
 
   const getAvatarUrl = (user: any) => {
-    if (!user) return null;
-    
-    // Try different possible avatar properties
-    if (user.avatarUrl) return user.avatarUrl;
-    if (user.avatar) return user.avatar;
-    if (user.avatar_url) return user.avatar_url;
-    if (user.user?.avatarUrl) return user.user.avatarUrl;
-    if (user.user?.avatar) return user.user.avatar;
-    if (user.user?.avatar_url) return user.user.avatar_url;
-    
-    return null;
+    if (!user) return DEFAULT_AVATAR;
+    let avatarUrl = user.avatarUrl || user.avatar || user.avatar_url || 
+                   user.user?.avatarUrl || user.user?.avatar || user.user?.avatar_url;
+    if (!avatarUrl || typeof avatarUrl !== 'string' || avatarUrl.trim() === '') {
+      return DEFAULT_AVATAR;
+    }
+    // Check for backend default avatar paths
+    const backendDefaults = [
+      '/media/avatars/default.jpeg',
+      '/media/avatars/default.jpg',
+      '/media/avatars/default.png',
+      'profile-default-icon-2048x2045-u3j7s5nj.png'
+    ];
+    for (const def of backendDefaults) {
+      if (avatarUrl.includes(def)) {
+        return DEFAULT_AVATAR;
+      }
+    }
+    if (avatarUrl.startsWith('http')) {
+      return avatarUrl;
+    }
+    if (avatarUrl.startsWith('/media')) {
+      return `${API_BASE_URL}${avatarUrl}`;
+    }
+    return `${API_BASE_URL}/media/${avatarUrl}`;
   };
 
   const getUserId = (user: any) => {
@@ -1565,7 +1579,7 @@ const MessengerUI = () => {
             user: conv.type === 'direct' ? {
               id: conv.participant1?.id === user?.id ? conv.participant2?.id : conv.participant1?.id,
               name: getParticipantName(conv.participant1?.id === user?.id ? conv.participant2 : conv.participant1),
-              avatarUrl: (conv.participant1?.id === user?.id ? conv.participant2?.avatar : conv.participant1?.avatar) || DEFAULT_AVATAR,
+              avatarUrl: getAvatarUrl(conv.participant1?.id === user?.id ? conv.participant2 : conv.participant1),
               isOnline: (conv.participant1?.id === user?.id ? conv.participant2?.is_online : conv.participant1?.is_online) || false,
               status: (conv.participant1?.id === user?.id ? conv.participant2?.online_status : conv.participant1?.online_status) || 'offline',
               bio: conv.participant1?.id === user?.id ? conv.participant2?.bio : conv.participant1?.bio || '',
@@ -1579,24 +1593,7 @@ const MessengerUI = () => {
               members: conv.members?.length || 0,
               isActive: true,
               description: conv.description || '',
-              avatarUrl: (() => {
-                // Get avatar from the group field
-                const groupAvatar = conv.group?.avatar;
-                if (!groupAvatar) return DEFAULT_GROUP_AVATAR;
-                
-                // Handle full URLs
-                if (groupAvatar.startsWith('http')) {
-                  return groupAvatar;
-                }
-                
-                // Handle paths starting with /media
-                if (groupAvatar.startsWith('/media')) {
-                  return `${API_BASE_URL}${groupAvatar}`;
-                }
-                
-                // Handle other paths
-                return `${API_BASE_URL}/media/${groupAvatar}`;
-              })()
+              avatarUrl: getAvatarUrl(conv.group)
             } : null,
             group_id: conv.group_id || conv.id,
             members: conv.members || []
@@ -4919,7 +4916,7 @@ const MessengerUI = () => {
             user: conv.type === 'direct' ? {
               id: conv.participant1?.id === user?.id ? conv.participant2?.id : conv.participant1?.id,
               name: getDisplayName(conv.participant1?.id === user?.id ? conv.participant2 : conv.participant1),
-              avatarUrl: (conv.participant1?.id === user?.id ? conv.participant2?.avatar : conv.participant1?.avatar) || DEFAULT_AVATAR,
+              avatarUrl: getAvatarUrl(conv.participant1?.id === user?.id ? conv.participant2 : conv.participant1),
               isOnline: (conv.participant1?.id === user?.id ? conv.participant2?.is_online : conv.participant1?.is_online) || false,
               status: (conv.participant1?.id === user?.id ? conv.participant2?.online_status : conv.participant1?.online_status) || 'offline',
               bio: conv.participant1?.id === user?.id ? conv.participant2?.bio : conv.participant1?.bio || '',
@@ -4933,17 +4930,7 @@ const MessengerUI = () => {
               members: conv.members?.length || 0,
               isActive: true,
               description: conv.description || '',
-              avatarUrl: (() => {
-                const groupAvatar = conv.group?.avatar;
-                if (!groupAvatar) return DEFAULT_GROUP_AVATAR;
-                if (groupAvatar.startsWith('http')) {
-                  return groupAvatar;
-                }
-                if (groupAvatar.startsWith('/media')) {
-                  return `${API_BASE_URL}${groupAvatar}`;
-                }
-                return `${API_BASE_URL}/media/${groupAvatar}`;
-              })()
+              avatarUrl: getAvatarUrl(conv.group)
             } : null,
             group_id: conv.group_id || conv.id,
             members: conv.members || []

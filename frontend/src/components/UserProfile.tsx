@@ -390,7 +390,7 @@ const isValidCssColor = (color: string) => {
       return !!s.color;
     })())
   );
-};
+}
 
 export default function UserProfile() {
   const { username } = useParams();
@@ -1016,17 +1016,8 @@ export default function UserProfile() {
   };
 
   const getAvatarUrl = (avatarPath: string) => {
-    if (!avatarPath) return 'https://i.pravatar.cc/150?img=1';
-    if (avatarPath.startsWith('http')) return avatarPath;
-    if (avatarPath.includes('media/')) {
-      const cleanPath = avatarPath.replace(/^.*?media\//, '');
-      return `${import.meta.env.VITE_API_URL}/media/${cleanPath}`;
-    }
-    if (avatarPath.startsWith('avatars/')) {
-      return `${import.meta.env.VITE_API_URL}/media/avatars/${avatarPath.replace('avatars/', '')}`;
-    }
-    const path = avatarPath.startsWith('/') ? avatarPath.substring(1) : avatarPath;
-    return `${import.meta.env.VITE_API_URL}/api/${path}`;
+    if (avatarPath && avatarPath.startsWith('http')) return avatarPath;
+    return '/default.png';
   };
 
   const getTagGradient = (color: string) => {
@@ -1429,8 +1420,8 @@ export default function UserProfile() {
         description: c.description,
         total_members: c.total_members || c.members_count || 0,
         active_members: c.active_members || 0,
-        icon: c.icon || '🌟',
-        bannerUrl: c.banner || '',
+        icon: c.icon || '/default_community_icon.png',
+        bannerUrl: c.banner || '/default_community_banner.png',
         category: c.category,
         isJoined: true,
         activity: c.activity_score || 0,
@@ -1815,15 +1806,16 @@ export default function UserProfile() {
                         alt={`${profile.username}'s profile`}
                         className="w-24 h-24 rounded-full border-4 border-white dark:border-dark-bg"
                         onError={(e) => {
-                          console.log('Avatar load error:', e);
                           const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
+                          target.src = '/default.jpg';
                         }}
                       />
                     ) : (
-                      <div className="w-24 h-24 rounded-full border-4 border-white dark:border-dark-bg bg-gray-200 dark:bg-dark-card-hover flex items-center justify-center">
-                        <UserIcon className="w-12 h-12 text-gray-400 dark:text-dark-text-secondary" />
-                      </div>
+                      <img
+                        src="/default.jpg"
+                        alt="Default avatar"
+                        className="w-24 h-24 rounded-full border-4 border-white dark:border-dark-bg"
+                      />
                     )}
                     <div className="absolute bottom-0 right-0 bg-green-500 w-4 h-4 rounded-full border-2 border-white dark:border-dark-bg"></div>
                   </div>
@@ -2804,9 +2796,13 @@ export default function UserProfile() {
                           >
                             <div className="h-32 relative">
                               <img
-                                src={community.bannerUrl}
+                                src={community.bannerUrl || '/default_community_banner.png'}
                                 alt={community.name}
                                 className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = '/default_community_banner.png';
+                                }}
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                               <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
@@ -2903,6 +2899,7 @@ export default function UserProfile() {
                                   src={friend.user.avatarUrl}
                                   alt={friend.user.name}
                                   className="w-16 h-16 rounded-full border-2 border-white dark:border-dark-border shadow-lg transition-all duration-500 group-hover/avatar:scale-105 group-hover/avatar:shadow-xl relative z-10"
+                                  onError={e => { (e.target as HTMLImageElement).src = '/default.png'; }}
                                 />
                                 <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-dark-border z-20 transition-all duration-300 ${friend.user.lastActive === 'Online' ? 'bg-green-500 ring-2 ring-green-200 dark:ring-green-900' : 'bg-gray-400'}`}></span>
                             </div>

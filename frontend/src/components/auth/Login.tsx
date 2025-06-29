@@ -207,12 +207,12 @@ const Login: React.FC = () => {
                 disabled={isLoading}
                 className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base font-medium text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-lg sm:rounded-xl transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                {isLoading ? 'Logging in...' : 'Log In'}
               </button>
             </form>
 
             <div className="mt-4 sm:mt-6 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-              By signing up, you agree to the{' '}
+              By logging in, you agree to the{' '}
               <Link to="/terms" className="text-gray-900 dark:text-gray-200 hover:underline">Terms and Conditions</Link>
               {' '}and{' '}
               <Link to="/privacy" className="text-gray-900 dark:text-gray-200 hover:underline">Privacy Policy</Link>

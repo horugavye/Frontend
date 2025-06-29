@@ -435,26 +435,14 @@ const CommunityView: FC = (): JSX.Element => {
   };
 
   const getAvatarUrl = (avatarPath: string | null) => {
-    console.log('getAvatarUrl called with path:', avatarPath);
-    
-    if (!avatarPath) {
-      console.log('No avatar path provided');
-      return null;
+    if (!avatarPath || avatarPath.trim() === '') {
+      return '/default.jpg';
     }
-    
-    // If it's already a full URL, return it as is
     if (avatarPath.startsWith('http')) {
-      console.log('Using full URL as is:', avatarPath);
       return avatarPath;
     }
-
-    // Remove any leading slashes
     const cleanPath = avatarPath.startsWith('/') ? avatarPath.substring(1) : avatarPath;
-    
-    // Construct the full URL
-    const fullUrl = `${API_BASE_URL}/media/${cleanPath}`;
-    console.log('Constructed full URL:', fullUrl);
-    return fullUrl;
+    return `${API_BASE_URL}/media/${cleanPath}`;
   };
 
   const getMediaUrl = (mediaPath: string | null) => {
@@ -634,17 +622,43 @@ const CommunityView: FC = (): JSX.Element => {
   }, [membersCount]);
 
   const getCommunityIconUrl = (iconPath: string | null) => {
+    // Return fallback if no icon path provided
+    if (!iconPath) {
+      return '/default_community_icon.png';
+    }
+    
+    // Return fallback if icon path is empty string
+    if (iconPath.trim() === '') {
+      return '/default_community_icon.png';
+    }
+    
+    // Handle external URLs
     if (iconPath.startsWith('http')) {
       return iconPath;
     }
+    
+    // Handle relative paths
     const cleanPath = iconPath.startsWith('/') ? iconPath.substring(1) : iconPath;
     return `${API_BASE_URL}/media/${cleanPath}`;
   };
 
   const getCommunityBannerUrl = (bannerPath: string | null) => {
+    // Return fallback if no banner path provided
+    if (!bannerPath) {
+      return '/default_community_banner.png';
+    }
+    
+    // Return fallback if banner path is empty string
+    if (bannerPath.trim() === '') {
+      return '/default_community_banner.png';
+    }
+    
+    // Handle external URLs
     if (bannerPath.startsWith('http')) {
       return bannerPath;
     }
+    
+    // Handle relative paths
     const cleanPath = bannerPath.startsWith('/') ? bannerPath.substring(1) : bannerPath;
     return `${API_BASE_URL}/media/${cleanPath}`;
   };
@@ -2233,12 +2247,20 @@ const CommunityView: FC = (): JSX.Element => {
                     src={getCommunityBannerUrl(communityBanner)}
                     alt={community.name}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/default_community_banner.png';
+                    }}
                   />
                 ) : (
                   <img
                     src={getCommunityBannerUrl(null)}
                     alt="Default Community Banner"
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = '/default_community_banner.png';
+                    }}
                   />
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -2254,12 +2276,20 @@ const CommunityView: FC = (): JSX.Element => {
                             src={getCommunityIconUrl(communityIcon)}
                             alt={community.name}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/default_community_icon.png';
+                            }}
                           />
                         ) : (
                           <img
                             src={getCommunityIconUrl(null)}
                             alt="Default Community Icon"
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/default_community_icon.png';
+                            }}
                           />
                         )}
                       </div>
@@ -2659,10 +2689,14 @@ const CommunityView: FC = (): JSX.Element => {
                               <div className="flex items-center space-x-4">
                                 <div className="relative">
                                   <img
-                                    src={member.avatarUrl || getAvatarUrl(null)}
-                                      alt={member.name} 
+                                    src={getAvatarUrl(member.avatarUrl)}
+                                    alt={member.name} 
                                     className="w-12 h-12 rounded-full border-2 border-white dark:border-dark-card shadow-sm"
-                                    />
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.src = '/default.jpg';
+                                    }}
+                                  />
                                     {member.isOnline && (
                                     <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-dark-card" />
                                     )}

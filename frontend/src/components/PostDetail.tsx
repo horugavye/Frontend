@@ -153,6 +153,17 @@ interface WebSocketMessage {
   };
 }
 
+// Default avatar fallback
+const DEFAULT_AVATAR = '/default.jpg';  // Points to frontend/public/default.jpg
+
+// Helper function to get avatar URL with fallback
+const getAvatarUrl = (avatarUrl: string | null | undefined): string => {
+  if (!avatarUrl || avatarUrl === '') {
+    return DEFAULT_AVATAR;
+  }
+  return avatarUrl.startsWith('http') ? avatarUrl : `${import.meta.env.VITE_API_URL}${avatarUrl}`;
+};
+
 const PostDetail: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'top' | 'newest' | 'all'>('top');
   const [showReplies, setShowReplies] = useState<{ [key: string]: boolean }>({});
@@ -968,9 +979,15 @@ const PostDetail: React.FC = () => {
                   <div className="flex items-start gap-4">
                     <div className="relative">
                       <img
-                        src={post.author.avatar || 'https://i.pravatar.cc/150?img=12'}
+                        src={getAvatarUrl(post.author.avatar)}
                         alt={post.author.name}
                         className="w-12 h-12 rounded-full"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          if (target.src !== DEFAULT_AVATAR) {
+                            target.src = DEFAULT_AVATAR;
+                          }
+                        }}
                       />
                       {post.author.isOnline && (
                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-dark-card"></div>
@@ -1289,9 +1306,15 @@ const PostDetail: React.FC = () => {
                 {/* Comment Input */}
                 <div className="flex items-start gap-4 mb-8">
                   <img
-                    src={post.author.avatar || 'https://i.pravatar.cc/150?img=12'}
+                    src={getAvatarUrl(post.author.avatar)}
                     alt="Your avatar"
                     className="w-10 h-10 rounded-full ring-2 ring-purple-500 dark:ring-purple-400"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      if (target.src !== DEFAULT_AVATAR) {
+                        target.src = DEFAULT_AVATAR;
+                      }
+                    }}
                   />
                   <div className="flex-1">
                     <div className="bg-white dark:bg-dark-card rounded-2xl overflow-hidden shadow-lg border border-gray-200 dark:border-gray-700 hover:border-purple-200 dark:hover:border-purple-800 transition-all duration-200">

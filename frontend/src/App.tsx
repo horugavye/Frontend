@@ -35,7 +35,7 @@ import ReactModal from 'react-modal';
 // Helper function to get avatar URL
 const getAvatarUrl = (avatar: string | null): string => {
   if (!avatar) {
-    return 'https://ui-avatars.com/api/?background=random';
+    return '/default.jpg';  // Points to frontend/public/default.jpg (not backend media)
   }
   return avatar.startsWith('http') ? avatar : `${import.meta.env.VITE_API_URL}${avatar}`;
 };
