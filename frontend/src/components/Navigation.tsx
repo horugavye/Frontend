@@ -156,12 +156,8 @@ const Navigation: FC = () => {
                             className="w-6 h-6 rounded-full object-cover"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              // Show the emoji fallback by updating the parent span
-                              const parentSpan = target.parentElement;
-                              if (parentSpan) {
-                                parentSpan.textContent = '🌟';
-                              }
+                              target.onerror = null; // Prevent infinite loop
+                              target.src = '/default_community_icon.png';
                             }}
                           />
                         ) : (

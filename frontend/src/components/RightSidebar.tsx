@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useState, useRef, useEffect } from 'react';
 import { 
   PhoneIcon,
   VideoCameraIcon,
@@ -29,13 +29,11 @@ interface RightSidebarProps {
   user: any;
   onImageClick: (attachment: any, index: number) => void;
   onDeleteConversation: () => void;
-  setGroupMembers: React.Dispatch<React.SetStateAction<{ [key: string]: GroupMemberData[] }>>;
   setSelectedConversation: React.Dispatch<React.SetStateAction<any>>;
   onDeleteGroup: (groupId: string) => void;
-  fetchGroupMembers: (groupId: string) => Promise<void>;
 }
 
-const RightSidebar: FC<RightSidebarProps> = ({
+const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMembers?: (groupId: string) => Promise<void> }> = ({
   selectedConversation,
   isDarkMode,
   currentMessages,
@@ -43,249 +41,152 @@ const RightSidebar: FC<RightSidebarProps> = ({
   user,
   onImageClick,
   onDeleteConversation,
-  setGroupMembers,
   setSelectedConversation,
   onDeleteGroup,
+  setGroupMembers,
   fetchGroupMembers,
 }) => {
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
+        <span className="ml-4 text-gray-500">Loading user...</span>
+      </div>
+    );
+  }
+
   const { isDarkMode: themeIsDark } = useTheme();
   const [selectedMemberMenu, setSelectedMemberMenu] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [showDeleteGroupModal, setShowDeleteGroupModal] = useState(false);
   const [showAddMembersModal, setShowAddMembersModal] = useState(false);
   const [showUpdateGroupModal, setShowUpdateGroupModal] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!selectedMemberMenu) return;
+    function handleClickOutside(event: MouseEvent) {
+      // If menu is open and click is outside the menu and not on the ... button, close it
+      const target = event.target as HTMLElement;
+      // Check if click is inside the menu
+      if (menuRef.current && !menuRef.current.contains(target)) {
+        // Check if click is on any of the ... buttons
+        if (!target.closest('.member-menu-trigger')) {
+          setSelectedMemberMenu(null);
+        }
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [selectedMemberMenu]);
 
   const getMediaAttachments = () => {
-    const getFullUrl = (path: string | null | undefined) => {
-      if (!path) return null;
+    const getFullUrl = (path: string | null | undefined): string => {
+      if (!path) return '';
       if (path.startsWith('http')) return path;
       if (path.startsWith('data:')) return path;
-      
-      // Clean the path
       let cleanPath = path;
-      // Remove any duplicate media/ prefixes
       cleanPath = cleanPath.replace(/^\/media\/media\//, '/media/');
-      // Remove any leading slashes
       cleanPath = cleanPath.replace(/^\/+/, '');
-      // Remove any duplicate media/ in the middle of the path
       cleanPath = cleanPath.replace(/\/media\/media\//, '/media/');
-      
-      // Construct the full URL
       return `${import.meta.env.VITE_API_URL}/media/${cleanPath}`;
     };
 
-    const isImageFile = (file: any) => {
+    // Type guard for file object
+    type FileType = {
+      id: string;
+      file?: string;
+      file_name?: string;
+      file_type?: string;
+      file_size?: number;
+      category?: string;
+      thumbnail?: string;
+      created_at?: string;
+      uploaded_by?: string;
+      url?: string;
+      type?: string;
+      fileName?: string;
+      fileSize?: number;
+      duration?: number;
+      thumbnail_url?: string;
+    };
+
+    const isImageFile = (file: FileType) => {
       const fileType = file.file_type || file.type || '';
       const fileName = file.file_name || file.fileName || '';
       const category = file.category;
-      
-      // Log file details for debugging
-      console.log('[RightSidebar] Checking image file:', {
-        fileName,
-        fileType,
-        category,
-        file
-      });
-      
-      // Check category first
-      if (category === 'image') {
-        console.log('[RightSidebar] Detected image by category');
-        return true;
-      }
-      
-      // Check MIME types
-      if (fileType.startsWith('image/')) {
-        console.log('[RightSidebar] Detected image by MIME type:', fileType);
-        return true;
-      }
-      if (fileType === 'image') {
-        console.log('[RightSidebar] Detected image by type');
-        return true;
-      }
-      
-      // Check file extensions
+      if (category === 'image') return true;
+      if (fileType.startsWith('image/')) return true;
+      if (fileType === 'image') return true;
       const extension = fileName.split('.').pop()?.toLowerCase();
       const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'ico', 'tiff', 'tif'];
-      if (extension && imageExtensions.includes(extension)) {
-        console.log('[RightSidebar] Detected image by extension:', extension);
-        return true;
-      }
-      
+      if (extension && imageExtensions.includes(extension)) return true;
       return false;
     };
-
-    const isVideoFile = (file: any) => {
+    const isVideoFile = (file: FileType) => {
       const fileType = file.file_type || file.type || '';
       const fileName = file.file_name || file.fileName || '';
       const category = file.category;
-      
-      // Log file details for debugging
-      console.log('[RightSidebar] Checking video file:', {
-        fileName,
-        fileType,
-        category,
-        file
-      });
-      
-      // Check category first
-      if (category === 'video') {
-        console.log('[RightSidebar] Detected video by category');
-        return true;
-      }
-      
-      // Check MIME types
-      if (fileType.startsWith('video/')) {
-        console.log('[RightSidebar] Detected video by MIME type:', fileType);
-        return true;
-      }
-      if (fileType === 'video') {
-        console.log('[RightSidebar] Detected video by type');
-        return true;
-      }
-      
-      // Check file extensions
+      if (category === 'video') return true;
+      if (fileType.startsWith('video/')) return true;
+      if (fileType === 'video') return true;
       const extension = fileName.split('.').pop()?.toLowerCase();
       const videoExtensions = ['mp4', 'webm', 'mov', 'avi', 'wmv', 'flv', 'mkv', 'm4v'];
-      if (extension && videoExtensions.includes(extension)) {
-        console.log('[RightSidebar] Detected video by extension:', extension);
-        return true;
-      }
-      
+      if (extension && videoExtensions.includes(extension)) return true;
       return false;
     };
-
-    const isDocumentFile = (file: any) => {
+    const isDocumentFile = (file: FileType) => {
       const fileType = file.file_type || file.type || '';
       const fileName = file.file_name || file.fileName || '';
       const category = file.category;
-      
-      // Log file details for debugging
-      console.log('[RightSidebar] Checking document file:', {
-        fileName,
-        fileType,
-        category,
-        file
-      });
-      
-      // Check category first
-      if (category === 'document') {
-        console.log('[RightSidebar] Detected document by category');
-        return true;
-      }
-      
-      // Check MIME types
-      if (fileType.startsWith('application/pdf')) {
-        console.log('[RightSidebar] Detected PDF by MIME type');
-        return true;
-      }
-      if (fileType.startsWith('application/msword')) {
-        console.log('[RightSidebar] Detected Word by MIME type');
-        return true;
-      }
-      if (fileType.startsWith('application/vnd.openxmlformats-officedocument')) {
-        console.log('[RightSidebar] Detected Office document by MIME type');
-        return true;
-      }
-      if (fileType.startsWith('text/')) {
-        console.log('[RightSidebar] Detected text file by MIME type');
-        return true;
-      }
-      
-      // Check file extensions
+      if (category === 'document') return true;
+      if (fileType.startsWith('application/pdf')) return true;
+      if (fileType.startsWith('application/msword')) return true;
+      if (fileType.startsWith('application/vnd.openxmlformats-officedocument')) return true;
+      if (fileType.startsWith('text/')) return true;
       const extension = fileName.split('.').pop()?.toLowerCase();
       const documentExtensions = ['pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'pages'];
-      if (extension && documentExtensions.includes(extension)) {
-        console.log('[RightSidebar] Detected document by extension:', extension);
-        return true;
-      }
-      
+      if (extension && documentExtensions.includes(extension)) return true;
       return false;
     };
-
-    // Log all messages for debugging
-    console.log('[RightSidebar] All messages:', currentMessages);
 
     const mediaFiles = currentMessages
       .filter(message => {
-        // Check for both files and attachments
-        const hasFiles = message.files && message.files.length > 0;
-        const hasAttachments = message.attachments && message.attachments.length > 0;
-        
-        // Log message details
-        console.log('[RightSidebar] Checking message:', {
-          messageId: message.id,
-          hasFiles,
-          hasAttachments,
-          files: message.files,
-          attachments: message.attachments
-        });
-        
+        const hasFiles = Array.isArray(message.files) && message.files.length > 0;
+        const hasAttachments = Array.isArray(message.attachments) && message.attachments.length > 0;
         return hasFiles || hasAttachments;
       })
       .flatMap(message => {
-        // Combine both files and attachments
-        const files = message.files || [];
-        const attachments = message.attachments || [];
-        const allFiles = [...files, ...attachments];
-        
-        // Log combined files
-        console.log('[RightSidebar] Combined files for message:', {
-          messageId: message.id,
-          totalFiles: allFiles.length,
-          files: allFiles
-        });
-        
-        return allFiles;
+        const files = Array.isArray(message.files) ? message.files : [];
+        const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+        return [...files, ...attachments];
       })
-      .filter(file => {
-        // Check if it's a media file (image, video, or document)
+      .filter((file: FileType) => {
         const isImage = isImageFile(file);
         const isVideo = isVideoFile(file);
         const isDocument = isDocumentFile(file);
-        
-        // Log detection results
-        console.log('[RightSidebar] File detection results:', {
-          fileName: file.file_name || file.fileName,
-          isImage,
-          isVideo,
-          isDocument,
-          file
-        });
-        
         return isImage || isVideo || isDocument;
       })
-      .map(file => {
+      .map((file: FileType) => {
         const isImage = isImageFile(file);
         const isVideo = isVideoFile(file);
         const isDocument = isDocumentFile(file);
-
-        // Handle URLs with consistent priority
-        let url = file.url;
-        if (!url && file.file) {
-          url = getFullUrl(file.file);
-        } else if (url && !url.startsWith('http') && !url.startsWith('data:')) {
+        let url = file.url || (file.file ? getFullUrl(file.file) : '');
+        if (url && !url.startsWith('http') && !url.startsWith('data:')) {
           url = getFullUrl(url);
         }
-
-        // Handle thumbnail URLs with consistent priority
-        let thumbnail = null;
+        let thumbnail: string | undefined = undefined;
         if (isImage || isVideo) {
-          thumbnail = file.thumbnail_url || 
-                     (file.thumbnail ? getFullUrl(file.thumbnail) : null) || 
-                     (isImage ? url : null);
-          
+          thumbnail = file.thumbnail_url || (file.thumbnail ? getFullUrl(file.thumbnail) : undefined) || (isImage ? url : undefined);
           if (thumbnail && !thumbnail.startsWith('http') && !thumbnail.startsWith('data:')) {
             thumbnail = getFullUrl(thumbnail);
           }
         }
-
-        // Determine the type based on file characteristics
-        let type = file.file_type || file.type;
+        let type = file.file_type || file.type || '';
         if (isImage) type = 'image';
         else if (isVideo) type = 'video';
         else if (isDocument) type = 'document';
-
-        const result = {
+        return {
           id: file.id,
           type,
           url,
@@ -295,191 +196,180 @@ const RightSidebar: FC<RightSidebarProps> = ({
           duration: file.duration,
           category: file.category || (isImage ? 'image' : isVideo ? 'video' : isDocument ? 'document' : 'other')
         };
-
-        // Log final processed file
-        console.log('[RightSidebar] Processed file:', result);
-
-        return result;
       });
-
-    // Log final results
-    console.log('[RightSidebar] Final media files:', mediaFiles);
-    
     return mediaFiles;
   };
 
   const mediaAttachments = getMediaAttachments();
 
   const handleRoleChange = async (memberId: string, newRole: 'admin' | 'moderator' | 'member') => {
+    // Optimistically update the UI
+    let previousState: typeof selectedConversation | null = null;
+    setSelectedConversation((prev: typeof selectedConversation) => {
+      previousState = prev;
+      if (!prev || !prev.group) return prev;
+      // Update group.members
+      const updatedGroupMembers = Array.isArray(prev.group.members)
+        ? prev.group.members.map((member: any) =>
+            member.id === memberId ? { ...member, role: newRole } : member
+          )
+        : [];
+      // Update selectedConversation.members
+      const updatedMembers = Array.isArray(prev.members)
+        ? prev.members.map((member: any) =>
+            member.id === memberId ? { ...member, role: newRole } : member
+          )
+        : [];
+      return {
+        ...prev,
+        group: {
+          ...prev.group,
+          members: updatedGroupMembers,
+        },
+        members: updatedMembers,
+      };
+    });
+    setIsUpdating(true);
     try {
-      setIsUpdating(true);
       if (!selectedConversation?.id) {
         throw new Error('Conversation ID not found');
       }
-
-      // Check if the current user is an admin
-      const currentUserMember = groupMembers[selectedConversation.group?.id]?.find(
-        member => member.id === user?.id
-      );
-      
+      // Only allow admins to change roles
+      const groupMemberList = selectedConversation?.members || [];
+      const currentUserMember = groupMemberList.find((m: any) => m.id === user?.id || m.user?.id === user?.id);
       if (!currentUserMember || currentUserMember.role !== 'admin') {
         toast.error('Only admins can change roles');
+        // Revert optimistic update
+        if (previousState) setSelectedConversation(previousState);
         return;
       }
-
-      // Prevent changing own role
       if (memberId === user?.id) {
         toast.error('You cannot change your own role');
+        if (previousState) setSelectedConversation(previousState);
         return;
       }
-
-      // Check if this is the last admin trying to change their role
-      const adminCount = groupMembers[selectedConversation.group?.id]?.filter(
-        member => member.role === 'admin'
-      ).length || 0;
-      
-      const targetMember = groupMembers[selectedConversation.group?.id]?.find(
-        member => member.id === memberId
-      );
-      
-      if (targetMember?.role === 'admin' && adminCount <= 1) {
-        toast.error('Cannot remove the last admin. Please promote another member to admin first.');
-        return;
-      }
-
-      // Use the correct API endpoint for changing member role
-      const response = await axios.put(`${import.meta.env.VITE_API_URL}/api/chat/conversations/${selectedConversation.id}/change_member_role/`, {
-        member_id: memberId,
-        role: newRole
-      }, {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+      // Call backend API to change role
+      const response = await axios.put(
+        `${import.meta.env.VITE_API_URL}/api/chat/conversations/${selectedConversation.id}/change_member_role/`,
+        {
+          member_id: memberId,
+          role: newRole
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          }
         }
-      });
-      
+      );
       if (response.status === 200) {
         toast.success(`Successfully updated role to ${newRole}`);
-        
-        // Update the local state immediately
-        if (selectedConversation?.group?.id) {
-          const groupId = selectedConversation.group.id;
-          
-          // Update groupMembers state
-          setGroupMembers(prev => {
-            const updatedMembers = prev[groupId]?.map(member => 
-              member.id === memberId 
-                ? { ...member, role: newRole }
-                : member
-            ) || [];
-            
-            return {
+        // Fetch updated conversation details
+        try {
+          const token = localStorage.getItem('access_token');
+          const convResponse = await axios.get(
+            `${import.meta.env.VITE_API_URL}/api/chat/conversations/${selectedConversation.id}/`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          if (convResponse.status === 200 && convResponse.data) {
+            setSelectedConversation((prev: typeof selectedConversation) => ({
               ...prev,
-              [groupId]: updatedMembers
-            };
-          });
-
-          // Update selectedConversation state
-          setSelectedConversation(prev => {
-            if (!prev || !prev.group) return prev;
-            
-            // Ensure members is an array
-            const currentMembers = Array.isArray(prev.group.members) ? prev.group.members : [];
-            
-            return {
-              ...prev,
-              group: {
-                ...prev.group,
-                members: currentMembers.map(member => 
-                  member.id === memberId 
-                    ? { ...member, role: newRole }
-                    : member
-                )
-              }
-            };
-          });
+              ...convResponse.data,
+              // Optionally, you may want to transform convResponse.data to match your UI shape
+            }));
+          }
+        } catch (fetchError) {
+          console.error('Failed to fetch updated conversation:', fetchError);
         }
       }
     } catch (error: any) {
       console.error('Error updating role:', error);
-      const errorMessage = error.response?.data?.error || 
-                          error.response?.data?.detail || 
-                          'Failed to update role. Please try again.';
+      const errorMessage = error.response?.data?.error ||
+        error.response?.data?.detail ||
+        'Failed to update role. Please try again.';
       toast.error(errorMessage);
+      // Revert optimistic update
+      if (previousState) setSelectedConversation(previousState);
     } finally {
       setIsUpdating(false);
       setSelectedMemberMenu(null);
     }
   };
 
-  const handleRemoveMember = async (memberId: string) => {
+  const handleRemoveMember = async (memberUserId: string | undefined) => {
+    console.log('handleRemoveMember called with:', memberUserId);
+    if (!memberUserId) {
+      console.log('Early return: Invalid member');
+      toast.error('Invalid member');
+      return;
+    }
+    let previousState: typeof selectedConversation | null = null;
     try {
       setIsUpdating(true);
       if (!selectedConversation?.id) {
+        console.log('Early return: Conversation ID not found');
         throw new Error('Conversation ID not found');
       }
-
-      // Check if the current user is an admin
-      const currentUserMember = groupMembers[selectedConversation.group?.id]?.find(
-        member => member.id === user?.id
+      const groupId = selectedConversation.group?.id;
+      const currentUserMember = selectedConversation?.members?.find(
+        (m: any) => m.id === user?.id || m.user?.id === user?.id
       );
-      
       if (!currentUserMember || currentUserMember.role !== 'admin') {
+        console.log('Early return: Not admin or no currentUserMember', currentUserMember);
         toast.error('Only admins can remove members');
         return;
       }
-
-      // Prevent removing yourself
-      if (memberId === user?.id) {
+      if (memberUserId === user?.id) {
+        console.log('Early return: Tried to remove self');
         toast.error('You cannot remove yourself from the group');
         return;
       }
-
-      // Prevent removing other admins
-      const targetMember = groupMembers[selectedConversation.group?.id]?.find(
-        member => member.id === memberId
-      );
-      
+      const targetMember = groupId ? groupMembers[groupId]?.find((member) => (member.user?.id || member.id) === memberUserId) : undefined;
       if (targetMember?.role === 'admin') {
+        console.log('Early return: Tried to remove another admin', targetMember);
         toast.error('Admins cannot remove other admins');
         return;
       }
-
-      // Optimistically update the UI
-      if (selectedConversation?.group?.id) {
-        const groupId = selectedConversation.group.id;
-        
-        // Update groupMembers state immediately
-        setGroupMembers(prev => {
-          const currentGroupMembers = prev[groupId] || [];
-          const updatedMembers = currentGroupMembers.filter(member => member.id !== memberId);
-          return {
-            ...prev,
-            [groupId]: updatedMembers
-          };
-        });
-
-        // Update selectedConversation state immediately
-        setSelectedConversation(prev => {
+      if (groupId) {
+        // Save previous state for rollback
+        previousState = selectedConversation;
+        setSelectedConversation((prev: typeof selectedConversation) => {
           if (!prev || !prev.group) return prev;
-          const currentMembers = prev.group.members || 0;
+          const currentGroupMembers = Array.isArray(prev.group.members) ? prev.group.members : [];
+          const currentMembers = Array.isArray(prev.members) ? prev.members : [];
           return {
             ...prev,
             group: {
               ...prev.group,
-              members: currentMembers - 1
-            }
+              members: currentGroupMembers.filter(
+                (member: any) => (member.user?.id !== memberUserId && member.id !== memberUserId)
+              )
+            },
+            members: currentMembers.filter(
+              (member: any) => (member.user?.id !== memberUserId && member.id !== memberUserId)
+            )
           };
         });
-
-        // Close the member menu immediately
         setSelectedMemberMenu(null);
+        // INSTANT UI UPDATE: Remove from groupMembers prop if setGroupMembers is provided
+        if (setGroupMembers && typeof setGroupMembers === 'function') {
+          setGroupMembers((prev: any) => {
+            if (!prev || !prev[groupId]) return prev;
+            return {
+              ...prev,
+              [groupId]: prev[groupId].filter((member: any) => (member.user?.id !== memberUserId && member.id !== memberUserId))
+            };
+          });
+        }
       }
-
-      // Make the API call
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/chat/conversations/${selectedConversation.id}/remove_member/`,
-        { user_id: memberId },
+        { user_id: memberUserId },
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
@@ -487,25 +377,59 @@ const RightSidebar: FC<RightSidebarProps> = ({
           }
         }
       );
-      
       if (response.status === 200) {
         toast.success('Member removed successfully');
-        // Refresh the group members to ensure sync with backend
-        if (selectedConversation?.group?.id) {
-          await fetchGroupMembers(selectedConversation.group.id);
+        // Fetch updated conversation details
+        try {
+          const token = localStorage.getItem('access_token');
+          const convResponse = await axios.get(
+            `${import.meta.env.VITE_API_URL}/api/chat/conversations/${selectedConversation.id}/`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          if (convResponse.status === 200 && convResponse.data) {
+            // Use the latest groupMembers[groupId] if available for members
+            setSelectedConversation((prev: typeof selectedConversation) => {
+              const groupId = prev?.group?.id;
+              let newMembers = prev?.members;
+              let newGroupMembers = prev?.group?.members;
+              if (groupId && groupMembers && groupMembers[groupId]) {
+                newMembers = groupMembers[groupId];
+                newGroupMembers = groupMembers[groupId];
+              }
+              return {
+                ...prev,
+                ...convResponse.data,
+                members: newMembers,
+                group: {
+                  ...prev?.group,
+                  ...convResponse.data.group,
+                  members: newGroupMembers,
+                },
+              };
+            });
+          }
+        } catch (fetchError) {
+          console.error('Failed to fetch updated conversation:', fetchError);
         }
+        // Refresh group members list from backend for consistency
+        if (fetchGroupMembers && groupId) {
+          await fetchGroupMembers(groupId);
+        }
+      } else {
+        // Revert optimistic update if not 200
+        if (previousState) setSelectedConversation(previousState);
       }
     } catch (error: any) {
       console.error('Error removing member:', error);
       const errorMessage = error.response?.data?.detail || error.response?.data?.error || 'Failed to remove member. Please try again.';
       toast.error(errorMessage);
-
-      // Revert the optimistic update on error
-      if (selectedConversation?.group?.id) {
-        const groupId = selectedConversation.group.id;
-        // Refresh the group members to get the correct state
-        await fetchGroupMembers(groupId);
-      }
+      // Revert optimistic update on error
+      if (previousState) setSelectedConversation(previousState);
     } finally {
       setIsUpdating(false);
     }
@@ -517,17 +441,14 @@ const RightSidebar: FC<RightSidebarProps> = ({
       if (!selectedConversation?.id || !selectedConversation?.group?.id) {
         throw new Error('Group ID not found');
       }
-
-      // Check if the current user is an admin
-      const currentUserMember = groupMembers[selectedConversation.group.id]?.find(
-        member => member.id === user?.id
-      );
-      
+      const groupId = selectedConversation.group.id;
+      const currentUserMember = groupMembers[groupId]?.find((member) => member.user?.id === user?.id);
+      const adminIdToSend = currentUserMember?.id || user.id;
       if (!currentUserMember || currentUserMember.role !== 'admin') {
         toast.error('Only admins can delete the group');
         return;
       }
-
+      console.log('Attempting to delete group:', selectedConversation.id);
       const response = await axios.delete(
         `${import.meta.env.VITE_API_URL}/api/chat/conversations/${selectedConversation.id}/`,
         {
@@ -537,16 +458,31 @@ const RightSidebar: FC<RightSidebarProps> = ({
           }
         }
       );
-      
-      if (response.status === 200) {
+      if (response.status === 200 || response.status === 204) {
         toast.success('Group deleted successfully');
         onDeleteGroup(selectedConversation.id);
         setShowDeleteGroupModal(false);
+      } else {
+        const errorMsg = `Unexpected response status: ${response.status} ${response.statusText || ''}`;
+        toast.error(errorMsg);
+        console.error(errorMsg, response);
       }
     } catch (error: any) {
-      console.error('Error deleting group:', error);
-      const errorMessage = error.response?.data?.detail || error.response?.data?.error || 'Failed to delete group. Please try again.';
+      // Try to extract as much error info as possible
+      let errorMessage = 'Failed to delete group. Please try again.';
+      if (error.response) {
+        errorMessage =
+          error.response.data?.detail ||
+          error.response.data?.error ||
+          error.response.data?.message ||
+          JSON.stringify(error.response.data) ||
+          errorMessage;
+        errorMessage = `Error ${error.response.status}: ${errorMessage}`;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
       toast.error(errorMessage);
+      console.error('Error deleting group:', error);
     } finally {
       setIsUpdating(false);
       setShowDeleteGroupModal(false);
@@ -561,16 +497,8 @@ const RightSidebar: FC<RightSidebarProps> = ({
     setShowAddMembersModal(true);
   };
 
-  const handleMembersAdded = () => {
-    // Refresh the group members list
-    if (selectedConversation?.group?.id) {
-      fetchGroupMembers(selectedConversation.group.id);
-    }
-  };
-
   const handleGroupUpdate = (updatedGroup: any) => {
     console.log('Group updated:', updatedGroup);
-    // Update the conversation data with the new group info
     if (selectedConversation) {
       setSelectedConversation({
         ...selectedConversation,
@@ -586,9 +514,27 @@ const RightSidebar: FC<RightSidebarProps> = ({
     setShowUpdateGroupModal(false);
   };
 
+  // Debug logs to help diagnose admin detection
+  console.log('groupMemberList:', selectedConversation?.members);
+  console.log('user:', user);
+  console.log('currentUserMember:', selectedConversation?.members?.find((m: any) => m.id === user?.id || m.user?.id === user?.id));
+  console.log('currentUserIsAdmin:', selectedConversation?.members?.find((m: any) => m.id === user?.id || m.user?.id === user?.id)?.role === 'admin');
+
+  // Add this variable for clarity
+  const currentUserIsAdmin = selectedConversation?.members?.find(
+    (m: any) => m.id === user?.id || m.user?.id === user?.id
+  )?.role === 'admin';
+
+  if (selectedConversation?.type === 'group') {
+    console.log('user.id:', user?.id);
+    console.log('groupId:', selectedConversation.group?.id);
+    console.log('groupMemberList:', selectedConversation?.members);
+    console.log('currentUserMember:', selectedConversation?.members?.find((m: any) => m.id === user?.id || m.user?.id === user?.id));
+    console.log('currentUserIsAdmin:', currentUserIsAdmin);
+  }
+
   return (
     <div className={`h-full flex flex-col ${isDarkMode ? 'bg-dark-card' : 'bg-white'} shadow-lg rounded-2xl overflow-hidden`}>
-      {/* Header */}
       <div className={`sticky top-0 p-8 border-b ${isDarkMode ? 'border-dark-border' : 'border-gray-200'} bg-inherit z-10`}>
         <div className="flex items-center justify-between">
           <h2 className={`text-lg font-bold ${isDarkMode ? 'text-dark-text' : 'text-gray-900'} tracking-tight bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent`}>
@@ -605,16 +551,14 @@ const RightSidebar: FC<RightSidebarProps> = ({
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-y-auto">
-        {/* Profile/Group Info */}
         <div className="p-8">
           <div className="flex flex-col items-center">
             <div className="relative">
               <img
                 src={selectedConversation?.type === 'direct' 
                   ? selectedConversation?.user?.avatarUrl 
-                  : selectedConversation?.group?.avatarUrl}
+                  : selectedConversation?.group?.avatarUrl || '/group.png'}
                 alt={selectedConversation?.type === 'direct' 
                   ? selectedConversation?.user?.name 
                   : selectedConversation?.group?.name}
@@ -634,17 +578,18 @@ const RightSidebar: FC<RightSidebarProps> = ({
                 {selectedConversation?.user?.isOnline ? 'Online' : 'Offline'}
               </p>
             ) : (
-              <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                {groupMembers[selectedConversation?.group?.id]?.length || 0} members
-              </p>
+              <div className="flex items-center gap-1 mt-1">
+                <UserGroupIcon className={`w-4 h-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`} />
+                <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>{
+                  groupMembers[selectedConversation?.group?.id]?.length ?? selectedConversation?.members?.length ?? 0
+                } members</p>
+              </div>
             )}
           </div>
         </div>
 
-        {/* Bio and Personality Tags for Direct Messages */}
         {selectedConversation?.type === 'direct' && (
           <div className="px-8 py-6 space-y-6">
-            {/* Bio Section */}
             <div>
               <h3 className={`text-xs font-semibold tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} uppercase mb-3`}>
                 Bio
@@ -654,14 +599,13 @@ const RightSidebar: FC<RightSidebarProps> = ({
               </p>
             </div>
 
-            {/* Personality Tags */}
             {selectedConversation?.user?.personality_tags && selectedConversation.user.personality_tags.length > 0 && (
               <div>
                 <h3 className={`text-xs font-semibold tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} uppercase mb-3`}>
                   Personality
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {selectedConversation.user.personality_tags.map((tag, index) => (
+                  {selectedConversation.user.personality_tags.map((tag: any, index: number) => (
                     <span
                       key={index}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors duration-200 ${
@@ -686,7 +630,6 @@ const RightSidebar: FC<RightSidebarProps> = ({
           </div>
         )}
 
-        {/* Media Section */}
         <div className="px-8 py-6">
           <div className="flex items-center justify-between mb-5">
             <h3 className={`text-xs font-semibold tracking-wider ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} uppercase`}>
@@ -710,7 +653,7 @@ const RightSidebar: FC<RightSidebarProps> = ({
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200" />
-                  {(attachment.type?.startsWith('video/') || attachment.file_type?.startsWith('video/')) && (
+                  {attachment.type?.startsWith('video/') && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
                         <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -756,7 +699,6 @@ const RightSidebar: FC<RightSidebarProps> = ({
           )}
         </div>
 
-        {/* Group Members Section */}
         {selectedConversation?.type === 'group' && (
           <div className="px-8 py-6">
             <div className="flex items-center justify-between mb-5">
@@ -764,137 +706,158 @@ const RightSidebar: FC<RightSidebarProps> = ({
                 Members
               </h3>
               <span className={`text-xs px-3 py-1.5 rounded-full ${isDarkMode ? 'bg-dark-card-hover text-gray-400' : 'bg-gray-100 text-gray-600'} font-medium`}>
-                {groupMembers[selectedConversation?.group?.id]?.length || 0}
+                {(groupMembers && selectedConversation?.group?.id && groupMembers[selectedConversation.group.id]?.length) || selectedConversation?.members?.length || 0}
               </span>
             </div>
             <div className="space-y-4">
-              {groupMembers[selectedConversation?.group?.id]?.map((member) => (
-                <div key={member.id} className="group flex items-center space-x-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-card-hover transition-colors duration-200">
-                  <div className="relative">
-                    <img
-                      src={member.avatarUrl || '/default.jpg'}
-                      alt={member.name}
-                      className="w-12 h-12 rounded-full object-cover ring-2 ring-purple-500/20"
-                    />
-                    {member.isOnline && (
-                      <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-dark-card" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <h3 className={`text-base font-semibold truncate ${isDarkMode ? 'text-dark-text' : 'text-gray-900'}`}>
-                          {member.name}
-                        </h3>
-                        {member.isOnline && (
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-500">
-                            Online
-                          </span>
-                        )}
-                      </div>
-                      {member.id !== user?.id && (
-                        <div className="relative">
+              {(groupMembers && selectedConversation?.group?.id && groupMembers[selectedConversation.group.id]
+                ? groupMembers[selectedConversation.group.id]
+                : selectedConversation?.members || []
+              ).map((member: any) => {
+                console.log('Rendering member:', member);
+                if (!member.user || !member.user.id) {
+                  console.log('Skipping member without user or user.id:', member);
+                  return null;
+                }
+                const displayName = member.name
+                  || (member.user && (member.user.first_name || member.user.last_name) ? `${member.user.first_name || ''} ${member.user.last_name || ''}`.trim() : '')
+                  || member.username
+                  || member.email
+                  || 'Unknown User';
+                return (
+                  <div key={member.id} className="group flex items-center space-x-4 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-card-hover transition-colors duration-200">
+                    <div className="relative">
+                      <img
+                        src={member.avatarUrl || member.user?.avatar || '/default.jpg'}
+                        alt={displayName}
+                        className="w-12 h-12 rounded-full object-cover ring-2 ring-purple-500/20"
+                      />
+                      {(member.isOnline || member.user?.is_online) && (
+                        <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white dark:border-dark-card" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <h3 className={`text-base font-semibold truncate ${isDarkMode ? 'text-dark-text' : 'text-gray-900'}`}>{displayName}</h3>
+                          {(member.isOnline || member.user?.is_online) && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-500">
+                              Online
+                            </span>
+                          )}
+                        </div>
+                        <div className="relative transition-opacity">
                           <button
                             onClick={() => setSelectedMemberMenu(selectedMemberMenu === member.id ? null : member.id)}
-                            className={`p-2 rounded-full transition-all duration-200 ${
-                              isDarkMode 
-                                ? 'text-gray-400 hover:text-gray-300' 
-                                : 'text-gray-500 hover:text-gray-700'
-                            }`}
+                            className={`p-2 rounded-full transition-all duration-200 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto ${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'} member-menu-trigger`}
+                            tabIndex={0}
                           >
                             <EllipsisHorizontalIcon className="w-5 h-5" />
                           </button>
                           {selectedMemberMenu === member.id && (
-                            <div className={`absolute right-0 mt-2 w-56 rounded-xl shadow-lg backdrop-blur-sm ${
-                              isDarkMode 
-                                ? 'bg-dark-card/95 border border-gray-700/50 shadow-gray-900/20' 
-                                : 'bg-white/95 border border-gray-200/50 shadow-gray-200/50'
-                            } z-10 overflow-hidden`}>
+                            <div
+                              ref={menuRef}
+                              className={`absolute right-0 mt-2 w-56 rounded-xl shadow-lg backdrop-blur-sm ${
+                                isDarkMode 
+                                  ? 'bg-dark-card/95 border border-gray-700/50 shadow-gray-900/20' 
+                                  : 'bg-white/95 border border-gray-200/50 shadow-gray-200/50'
+                              } z-10 overflow-hidden`}
+                            >
                               <div className="py-1.5">
-                                {member.id !== user?.id && (
-                                  <>
-                                    <button
-                                      className={`w-full px-4 py-2.5 text-left text-sm flex items-center space-x-3 ${
-                                        isDarkMode 
-                                          ? 'text-gray-300 hover:text-purple-400' 
-                                          : 'text-gray-700 hover:text-purple-600'
-                                      } transition-all duration-200 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                      onClick={() => handleRoleChange(member.id, 'admin')}
-                                      disabled={isUpdating}
-                                    >
-                                      <ShieldCheckIcon className="w-4 h-4" />
-                                      <span>Make Admin</span>
-                                    </button>
-                                    <button
-                                      className={`w-full px-4 py-2.5 text-left text-sm flex items-center space-x-3 ${
-                                        isDarkMode 
-                                          ? 'text-gray-300 hover:text-blue-400' 
-                                          : 'text-gray-700 hover:text-blue-600'
-                                      } transition-all duration-200 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                      onClick={() => handleRoleChange(member.id, 'moderator')}
-                                      disabled={isUpdating}
-                                    >
-                                      <ShieldExclamationIcon className="w-4 h-4" />
-                                      <span>Make Moderator</span>
-                                    </button>
-                                    <button
-                                      className={`w-full px-4 py-2.5 text-left text-sm flex items-center space-x-3 ${
-                                        isDarkMode 
-                                          ? 'text-gray-300 hover:text-green-400' 
-                                          : 'text-gray-700 hover:text-green-600'
-                                      } transition-all duration-200 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                      onClick={() => handleRoleChange(member.id, 'member')}
-                                      disabled={isUpdating}
-                                    >
-                                      <UserIcon className="w-4 h-4" />
-                                      <span>Make Member</span>
-                                    </button>
-                                    <div className={`h-px my-1 ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-200/50'}`} />
-                                    <button
-                                      className={`w-full px-4 py-2.5 text-left text-sm flex items-center space-x-3 ${
-                                        isDarkMode 
-                                          ? 'text-red-400 hover:text-red-300' 
-                                          : 'text-red-600 hover:text-red-700'
-                                      } transition-all duration-200 ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                      onClick={() => handleRemoveMember(member.id)}
-                                      disabled={isUpdating}
-                                    >
-                                      <TrashIcon className="w-4 h-4" />
-                                      <span>Remove Member</span>
-                                    </button>
-                                  </>
-                                )}
+                                {/* Show menu actions for everyone, but only allow admins (not self) to use them */}
+                                <div>
+                                  <button
+                                    className={`w-full px-4 py-2.5 text-left text-sm flex items-center space-x-3 ${
+                                      isDarkMode 
+                                        ? 'text-gray-300 hover:text-purple-400' 
+                                        : 'text-gray-700 hover:text-purple-600'
+                                    } transition-all duration-200 ${(!currentUserIsAdmin || (member.user?.id) === user?.id || isUpdating) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    onMouseDown={() => {
+                                      console.log('Role change button clicked for', member.user?.id, 'to admin');
+                                      handleRoleChange(member.user?.id, 'admin');
+                                    }}
+                                    disabled={!currentUserIsAdmin || (member.user?.id) === user?.id || isUpdating}
+                                  >
+                                    <ShieldCheckIcon className="w-4 h-4" />
+                                    <span>Make Admin</span>
+                                  </button>
+                                  <button
+                                    className={`w-full px-4 py-2.5 text-left text-sm flex items-center space-x-3 ${
+                                      isDarkMode 
+                                        ? 'text-gray-300 hover:text-blue-400' 
+                                        : 'text-gray-700 hover:text-blue-600'
+                                    } transition-all duration-200 ${(!currentUserIsAdmin || (member.user?.id) === user?.id || isUpdating) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    onMouseDown={() => {
+                                      console.log('Role change button clicked for', member.user?.id, 'to moderator');
+                                      handleRoleChange(member.user?.id, 'moderator');
+                                    }}
+                                    disabled={!currentUserIsAdmin || (member.user?.id) === user?.id || isUpdating}
+                                  >
+                                    <ShieldExclamationIcon className="w-4 h-4" />
+                                    <span>Make Moderator</span>
+                                  </button>
+                                  <button
+                                    className={`w-full px-4 py-2.5 text-left text-sm flex items-center space-x-3 ${
+                                      isDarkMode 
+                                        ? 'text-gray-300 hover:text-green-400' 
+                                        : 'text-gray-700 hover:text-green-600'
+                                    } transition-all duration-200 ${(!currentUserIsAdmin || (member.user?.id) === user?.id || isUpdating) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    onMouseDown={() => {
+                                      console.log('Role change button clicked for', member.user?.id, 'to member');
+                                      handleRoleChange(member.user?.id, 'member');
+                                    }}
+                                    disabled={!currentUserIsAdmin || (member.user?.id) === user?.id || isUpdating}
+                                  >
+                                    <UserIcon className="w-4 h-4" />
+                                    <span>Make Member</span>
+                                  </button>
+                                  <div className={`h-px my-1 ${isDarkMode ? 'bg-gray-700/50' : 'bg-gray-200/50'}`} />
+                                  <button
+                                    className={`w-full px-4 py-2.5 text-left text-sm flex items-center space-x-3 ${
+                                      isDarkMode 
+                                        ? 'text-red-400 hover:text-red-300' 
+                                        : 'text-red-600 hover:text-red-700'
+                                    } transition-all duration-200 ${(!currentUserIsAdmin || (member.user?.id) === user?.id || isUpdating) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    onMouseDown={() => {
+                                      console.log('Remove member clicked', member.user.id, user?.id, currentUserIsAdmin, isUpdating);
+                                      handleRemoveMember(member.user.id);
+                                    }}
+                                    disabled={!currentUserIsAdmin || (member.user?.id) === user?.id || isUpdating}
+                                  >
+                                    <TrashIcon className="w-4 h-4" />
+                                    <span>Remove Member</span>
+                                  </button>
+                                </div>
                               </div>
                             </div>
                           )}
                         </div>
-                      )}
+                      </div>
+                      <p className={`text-sm truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-0.5`}>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          member.role === 'admin' 
+                            ? isDarkMode 
+                              ? 'bg-purple-900/30 text-purple-300' 
+                              : 'bg-purple-100 text-purple-700'
+                            : member.role === 'moderator'
+                              ? isDarkMode
+                                ? 'bg-blue-900/30 text-blue-300'
+                                : 'bg-blue-100 text-blue-700'
+                              : isDarkMode
+                                ? 'bg-gray-700/50 text-gray-300'
+                                : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {member.role === 'admin' ? 'Administrator' : member.role === 'moderator' ? 'Moderator' : 'Member'}
+                        </span>
+                      </p>
                     </div>
-                    <p className={`text-sm truncate ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-0.5`}>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                        member.role === 'admin' 
-                          ? isDarkMode 
-                            ? 'bg-purple-900/30 text-purple-300' 
-                            : 'bg-purple-100 text-purple-700'
-                          : member.role === 'moderator'
-                            ? isDarkMode
-                              ? 'bg-blue-900/30 text-blue-300'
-                              : 'bg-blue-100 text-blue-700'
-                            : isDarkMode
-                              ? 'bg-gray-700/50 text-gray-300'
-                              : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {member.role === 'admin' ? 'Administrator' : member.role === 'moderator' ? 'Moderator' : 'Member'}
-                      </span>
-                    </p>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
 
-        {/* Actions Section */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <h3 className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
             Actions
@@ -924,17 +887,20 @@ const RightSidebar: FC<RightSidebarProps> = ({
                   <PencilIcon className="w-5 h-5" />
                   Update Group
                 </button>
-                <button
-                  onClick={() => setShowDeleteGroupModal(true)}
-                  className={`w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
-                    isDarkMode 
-                      ? 'bg-red-600/20 text-red-300 hover:bg-red-600/30 active:bg-red-600/40' 
-                      : 'bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300'
-                  } shadow-sm hover:shadow-md`}
-                >
-                  <TrashIcon className="w-5 h-5" />
-                  Delete Group
-                </button>
+                {/* Only show Delete Group button if current user is admin */}
+                {currentUserIsAdmin && (
+                  <button
+                    onClick={() => setShowDeleteGroupModal(true)}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
+                      isDarkMode 
+                        ? 'bg-red-600/20 text-red-300 hover:bg-red-600/30 active:bg-red-600/40' 
+                        : 'bg-red-100 text-red-700 hover:bg-red-200 active:bg-red-300'
+                    } shadow-sm hover:shadow-md`}
+                  >
+                    <TrashIcon className="w-5 h-5" />
+                    Delete Group
+                  </button>
+                )}
               </>
             )}
             {selectedConversation?.type === 'direct' && (
@@ -954,19 +920,17 @@ const RightSidebar: FC<RightSidebarProps> = ({
         </div>
       </div>
 
-      {/* Delete Group Modal */}
       {showDeleteGroupModal && selectedConversation?.group && (
         <DeleteGroupModal
           isOpen={showDeleteGroupModal}
           onClose={() => setShowDeleteGroupModal(false)}
-          onConfirm={handleDeleteGroup}
+          onConfirm={() => handleDeleteGroup()}
           groupName={selectedConversation.group.name}
           isDarkMode={isDarkMode}
           isDeleting={isUpdating}
         />
       )}
 
-      {/* Update Group Modal */}
       {showUpdateGroupModal && selectedConversation?.group && (
         <UpdateGroupModal
           isOpen={showUpdateGroupModal}
@@ -978,18 +942,12 @@ const RightSidebar: FC<RightSidebarProps> = ({
         />
       )}
 
-      {/* Add Members Modal */}
       {selectedConversation?.type === 'group' && (
         <AddMembersModal
           isOpen={showAddMembersModal}
           onClose={() => setShowAddMembersModal(false)}
           groupId={selectedConversation.group.id}
           conversationId={selectedConversation.id}
-          onMembersAdded={() => {
-            if (selectedConversation.group?.id) {
-              fetchGroupMembers(selectedConversation.group.id);
-            }
-          }}
         />
       )}
     </div>

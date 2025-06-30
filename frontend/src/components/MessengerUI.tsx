@@ -5019,12 +5019,11 @@ const MessengerUI = () => {
                       className="w-8 h-8 rounded-lg object-cover border-2 border-purple-500"
                     />
                     <div>
-                      <h2 className={`text-sm font-semibold ${isDarkMode ? 'text-dark-text' : 'text-gray-900'}`}>
-                        {selectedConversation.group.name}
-                      </h2>
-                      <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {groupMembers[selectedConversation.group.id]?.length || 0} members
-                      </p>
+                      <h2 className={`text-sm font-semibold ${isDarkMode ? 'text-dark-text' : 'text-gray-900'}`}>{selectedConversation.group.name}</h2>
+                      <div className="flex items-center gap-1">
+                        <UserGroupIcon className={`w-4 h-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                        <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{groupMembers[selectedConversation.group.id]?.length ?? selectedConversation?.members?.length ?? 0} members</p>
+                      </div>
                     </div>
                   </>
                 )}
@@ -5113,12 +5112,11 @@ const MessengerUI = () => {
                             className="w-12 h-12 rounded-lg object-cover border-2 border-purple-500"
                           />
                           <div>
-                            <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-dark-text' : 'text-gray-900'}`}>
-                              {selectedConversation.group.name}
-                            </h2>
-                            <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
-                              {groupMembers[selectedConversation.group.id]?.length || 0} members
-                            </p>
+                            <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-dark-text' : 'text-gray-900'}`}>{selectedConversation.group.name}</h2>
+                            <div className="flex items-center gap-1 mt-1">
+                              <UserGroupIcon className={`w-4 h-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                              <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>{groupMembers[selectedConversation.group.id]?.length ?? selectedConversation?.members?.length ?? 0} members</p>
+                            </div>
                           </div>
                         </>
                       )}

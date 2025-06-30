@@ -10,7 +10,7 @@ interface AddMembersModalProps {
   onClose: () => void;
   groupId: string;
   conversationId: string;
-  onMembersAdded: () => void;
+  onMembersAdded?: () => void;
 }
 
 interface FriendUser extends User {
@@ -150,7 +150,7 @@ const AddMembersModal: React.FC<AddMembersModalProps> = ({
         await fetchUsers();
         // Clear selected users
         setSelectedUsers([]);
-        onMembersAdded();
+        onMembersAdded && onMembersAdded();
         onClose();
       }
     } catch (error: any) {

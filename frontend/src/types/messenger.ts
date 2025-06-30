@@ -337,10 +337,21 @@ export interface Connection {
 
 export interface GroupMemberData {
   id: string;
-  name: string;
-  avatarUrl: string;
+  name?: string;
+  avatarUrl?: string;
   role: string;
-  isOnline: boolean;
+  isOnline?: boolean;
+  user?: {
+    id: string;
+    username?: string;
+    email?: string;
+    first_name?: string;
+    last_name?: string;
+    avatar?: string;
+    is_online?: boolean;
+    // Add any other fields as needed
+  };
+  // Add any other fields as needed
 }
 
 export interface MessageSuggestion {
