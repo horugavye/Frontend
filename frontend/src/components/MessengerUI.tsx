@@ -100,7 +100,7 @@ const API_ENDPOINTS = {
   messages: (conversationId: string) => `/api/chat/conversations/${conversationId}/messages/`,
   sendMessage: (conversationId: string) => `/api/chat/conversations/${conversationId}/messages/`,
   deleteConversation: (conversationId: string) => `/api/chat/conversations/${conversationId}/`,
-  deleteMessage: (conversationId: string, messageId: string) => `/api/chat/conversations/${conversationId}/messages/${messageId}/`,
+  deleteMessage: (messageId: string) => `/api/chat/messages/${messageId}/`,
   createThread: (conversationId: string, messageId: string) => `/api/chat/conversations/${conversationId}/messages/${messageId}/threads/`,
   getThread: (conversationId: string, messageId: string) => `/api/chat/conversations/${conversationId}/messages/${messageId}/threads/`,
 };
@@ -584,6 +584,9 @@ interface MessageActionsProps {
   onShowEmojiPicker: () => void;
   onDelete: () => void;
   onInfo: () => void;
+  selectedConversation: Conversation | null;
+  user: User | null;
+  isCurrentUserMember: boolean; // <-- Added
 }
 
 const MessageActions: FC<MessageActionsProps> = ({ 
@@ -594,7 +597,8 @@ const MessageActions: FC<MessageActionsProps> = ({
   isDarkMode, 
   onShowEmojiPicker, 
   onDelete, 
-  onInfo 
+  onInfo, 
+  isCurrentUserMember // <-- Only keep the used props
 }) => {
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -656,7 +660,8 @@ const MessageActions: FC<MessageActionsProps> = ({
         </button>
         {showMenu && (
           <div className={`absolute ${message.isOwn ? 'right-0' : 'left-0'} mt-1 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-1 z-50 transition-all duration-200 ease-out transform origin-top-right scale-100 opacity-100 backdrop-blur-md animate-fade-in`}>
-            {message.isOwn && (
+            {/* Only show delete if user is the sender AND still a member of the conversation */}
+            {message.isOwn && isCurrentUserMember && (
               <button
                 onClick={() => {
                   onDelete();
@@ -1880,7 +1885,7 @@ const MessengerUI = () => {
             },
             timestamp: message.created_at || new Date().toISOString(),
             status: message.status || 'sent',
-            isOwn: message.isOwn || false,
+            isOwn: String(message.sender.id) === String(user?.id),
             attachments: (message.files || []).map((file: any) => ({
               id: file.id,
               type: file.file_type || file.type,
@@ -2682,24 +2687,38 @@ const MessengerUI = () => {
   };
 
   const handleDelete = async (messageId: string) => {
+    // DEBUG: Log messageId, message, and user before attempting delete (in red)
+    const message = currentMessages.find(m => m.id === messageId);
+    console.log('%c[DEBUG][handleDelete] Attempting to delete message:', 'color: red; font-weight: bold;', {
+      messageId,
+      message,
+      currentUser: user
+    });
+    console.log('[MessengerUI] handleDelete membership check:', { isCurrentUserMember });
     if (!activeConversation) {
       console.error('No active conversation selected');
       toast.error('No active conversation selected');
       return;
     }
-
+    if (!isCurrentUserMember) {
+      toast.error('You are no longer a member of this conversation.');
+      return;
+    }
     try {
       // Show loading toast
       const loadingToast = toast.loading('Deleting message...');
 
-      // Call the API to delete the message
-      await api.delete(API_ENDPOINTS.deleteMessage(activeConversation, messageId));
+      // DEBUG: Log the Authorization header/token before making the API call
+      const token = localStorage.getItem('access_token');
+      console.debug('[DEBUG][handleDelete] Authorization header to be sent:', token ? `Bearer ${token}` : 'No token found');
+
+      // Call the API to delete the message (now only needs messageId)
+      await api.delete(API_ENDPOINTS.deleteMessage(messageId));
 
       // Update the UI by removing the deleted message
       setConversationMessages(prev => {
         const conversationId = activeConversation;
         if (!conversationId) return prev;
-
         return {
           ...prev,
           [conversationId]: prev[conversationId].filter(msg => msg.id !== messageId)
@@ -2715,22 +2734,34 @@ const MessengerUI = () => {
       // If the message was pinned, remove it from pinned messages
       setPinnedMessages(prev => prev.filter(id => id !== messageId));
 
-    } catch (error: any) {
-      console.error('Error deleting message:', error);
-      
+    } catch (error) {
+      // --- BEGIN DEBUG LOGGING ---
+      console.error('[DEBUG][handleDelete] Error deleting message:', error);
+      if (error.response) {
+        console.error('[DEBUG][handleDelete] Error response:', error.response);
+        console.error('[DEBUG][handleDelete] Error response data:', error.response.data);
+        console.error('[DEBUG][handleDelete] Error response status:', error.response.status);
+        console.error('[DEBUG][handleDelete] Error response headers:', error.response.headers);
+      } else {
+        console.error('[DEBUG][handleDelete] No error.response object:', error);
+      }
+      // --- END DEBUG LOGGING ---
+
       // Show error toast with specific message if available
       const errorMessage = error.response?.data?.detail || 
                           error.response?.data?.error || 
+                          error.message ||
                           'Failed to delete message. Please try again.';
-      toast.error(errorMessage);
-
-      // If the error is due to unauthorized access
+      // Handle 403 Forbidden with a more user-friendly message and debug info
       if (error.response?.status === 403) {
-        toast.error('You do not have permission to delete this message');
-      }
-      // If the error is due to message not found
-      else if (error.response?.status === 404) {
+        // Show the backend error message if available
+        toast.error(`Forbidden: ${errorMessage}`);
+      } else if (error.response?.data?.detail === 'You are not a member of this conversation') {
+        toast.error('You are no longer a member of this conversation.');
+      } else if (error.response?.status === 404) {
         toast.error('Message not found');
+      } else {
+        toast.error(errorMessage);
       }
     }
   };
@@ -4783,7 +4814,7 @@ const MessengerUI = () => {
         },
         timestamp: message.created_at,
         status: message.status || 'sent',
-        isOwn: message.sender.id === user?.id
+        isOwn: String(message.sender.id) === String(user?.id)
       };
 
       // Update the conversation messages state
@@ -4988,6 +5019,36 @@ const MessengerUI = () => {
       setGroupMembers(prev => ({ ...prev, [conversationId]: [] }));
     }
   };
+
+  // Add a helper function to check if the user is a member of the conversation
+  const isCurrentUserMember = useMemo(() => {
+    if (!selectedConversation || !user) {
+      console.warn('[MessengerUI] Membership check: No selectedConversation or user', { selectedConversation, user });
+      return false;
+    }
+    if (!Array.isArray(selectedConversation.members)) {
+      console.warn('[MessengerUI] Membership check: selectedConversation.members is not an array', { members: selectedConversation.members });
+      return false;
+    }
+    if (selectedConversation.members.length === 0) {
+      console.warn('[MessengerUI] Membership check: selectedConversation.members is empty', { members: selectedConversation.members });
+      return false;
+    }
+    const isMember = selectedConversation.members.some((m: any) => m.user?.id === user.id);
+    console.log('[MessengerUI] Membership check:', {
+      userId: user.id,
+      members: selectedConversation.members.map((m: any) => m.user?.id),
+      isMember
+    });
+    return isMember;
+  }, [selectedConversation, user]);
+
+  // Add auto-scroll to bottom effect
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [currentMessages]);
 
   return (
     <div className="w-full h-[calc(100vh-8rem)] max-w-[1600px] mx-auto mt-16 sticky top-16">
@@ -5206,7 +5267,10 @@ const MessengerUI = () => {
                     {messageGroups.map((group: MessageGroup, groupIndex: number) => (
                       <div key={`group-${group.date}-${groupIndex}`} className="mb-6">
                         <MessageTimeDivider date={group.date} isDarkMode={isDarkMode} />
-                        {group.messages.map((message: Message, messageIndex: number) => (
+                        {group.messages
+                          .slice() // copy to avoid mutating original
+                          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+                          .map((message: Message, messageIndex: number) => (
                           <div
                             key={`msg-${message.id}-${messageIndex}`}
                             className={`group relative flex items-start mb-4 ${
@@ -5233,6 +5297,7 @@ const MessengerUI = () => {
                                     setSelectedMessageInfo(message);
                                     setShowMessageInfo(true);
                                   }}
+                                  isCurrentUserMember={isCurrentUserMember} // <-- Added
                                 />
                               </div>
                               {/* Avatar - Responsive */}
@@ -5435,6 +5500,7 @@ const MessengerUI = () => {
                         ))}
                       </div>
                     ))}
+                    <div ref={messagesEndRef} />
                   </div>
                 )}
               </div>
