@@ -150,7 +150,7 @@ const MessageSuggestions: FC<MessageSuggestionsProps> = ({
 
         {/* Suggestions Container */}
         {isOpen && (
-          <div className={`absolute bottom-12 left-1/2 transform -translate-x-1/2 w-80 sm:w-96 md:w-[420px] lg:w-[480px] max-h-[400px] sm:max-h-[500px] overflow-hidden rounded-xl sm:rounded-2xl shadow-2xl border backdrop-blur-sm z-40 animate-in slide-in-from-bottom-2 duration-300 ${
+          <div className={`absolute bottom-12 right-0 w-56 sm:w-64 md:w-72 lg:w-80 max-h-[400px] sm:max-h-[500px] overflow-hidden rounded-xl sm:rounded-2xl shadow-2xl border backdrop-blur-sm z-40 animate-in slide-in-from-bottom-2 duration-300 ${
             isDarkMode 
               ? 'bg-gray-800/95 border-gray-700/50 shadow-gray-900/50' 
               : 'bg-white/95 border-gray-200/50 shadow-gray-900/20'
