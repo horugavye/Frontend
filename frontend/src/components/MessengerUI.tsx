@@ -5043,7 +5043,7 @@ const MessengerUI = () => {
     return isMember;
   }, [selectedConversation, user]);
 
-  // Add auto-scroll to bottom effect
+  // Add this useEffect after messageGroups or currentMessages are defined
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -5214,7 +5214,7 @@ const MessengerUI = () => {
               )}
 
               {/* Messages Container - Responsive */}
-              <div className={`flex-1 overflow-y-auto custom-scrollbar ${isDarkMode ? 'bg-dark-card' : 'bg-white'} px-3 sm:px-4 lg:px-6 py-4`}>
+              <div className={`flex-1 overflow-y-auto custom-scrollbar ${isDarkMode ? 'bg-dark-card' : 'bg-white'} px-3 sm:px-4 lg:px-6 py-4`} ref={messagesContainerRef}>
                 {isLoadingMessages ? (
                   // Loading state
                   <div className="flex items-center justify-center h-full">
@@ -5229,7 +5229,7 @@ const MessengerUI = () => {
                     <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-dark-text' : 'text-gray-900'} mb-2 text-center`}>
                       Error Loading Messages
                     </h2>
-                    <p className={`text-base text-center max-w-md ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <p className={`text-base text-center max-w-md ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}> 
                       {messagesError}
                     </p>
                     <button
@@ -5264,13 +5264,10 @@ const MessengerUI = () => {
                 ) : (
                   // Messages list when there are messages - Responsive
                   <div className="space-y-4">
-                    {messageGroups.map((group: MessageGroup, groupIndex: number) => (
+                    {[...messageGroups].reverse().map((group: MessageGroup, groupIndex: number) => (
                       <div key={`group-${group.date}-${groupIndex}`} className="mb-6">
                         <MessageTimeDivider date={group.date} isDarkMode={isDarkMode} />
-                        {group.messages
-                          .slice() // copy to avoid mutating original
-                          .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-                          .map((message: Message, messageIndex: number) => (
+                        {group.messages.map((message: Message, messageIndex: number) => (
                           <div
                             key={`msg-${message.id}-${messageIndex}`}
                             className={`group relative flex items-start mb-4 ${
@@ -5500,6 +5497,7 @@ const MessengerUI = () => {
                         ))}
                       </div>
                     ))}
+                    {/* Scroll anchor for bottom */}
                     <div ref={messagesEndRef} />
                   </div>
                 )}
