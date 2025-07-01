@@ -824,10 +824,8 @@ export const ChatWebSocketProvider: React.FC<ChatWebSocketProviderProps> = ({ ch
         }
         try {
             const data = JSON.parse(event.data);
-            if (data.type === 'pong') {
-                handlePong(data.timestamp);
-            } else {
-                // Process incoming messages
+            if (data.type === 'chat_message') {
+                // Process chat_message as usual
                 if (data.message && typeof data.message === 'object') {
                     const senderId = typeof data.message.sender === 'object' ? data.message.sender.id : data.message.sender;
                     const currentUserId = user?.id;
@@ -1024,9 +1022,13 @@ export const ChatWebSocketProvider: React.FC<ChatWebSocketProviderProps> = ({ ch
                 }
 
                 setLastMessage(data);
+            } else {
+                // Ignore all other event types
+                // Optionally log for debugging
+                // console.log('[ChatWebSocket] Ignoring non-chat_message event:', data.type);
             }
         } catch (error) {
-            console.error('[ChatWebSocket] Error parsing message:', error);
+            console.error('[ChatWebSocket] Error parsing WebSocket message:', error);
         }
     };
   };
@@ -1137,6 +1139,11 @@ export const ChatWebSocketProvider: React.FC<ChatWebSocketProviderProps> = ({ ch
 };
 
   const sendMessage = (message: ChatWebSocketMessage) => {
+    // Only allow sending chat_message events
+    if (message.type !== 'chat_message') {
+      console.warn('[ChatWebSocket] Only chat_message events are allowed to be sent. Ignoring:', message.type);
+      return;
+    }
     if (!chatWsRef.current || chatWsRef.current.readyState !== WebSocket.OPEN) {
         console.log('[ChatWebSocket] WebSocket not connected, queueing message');
         // Add isOwn flag and status to queued messages
