@@ -179,6 +179,38 @@ const AddMembersModal: React.FC<AddMembersModalProps> = ({
            interests.includes(searchLower);
   });
 
+  // Add getAvatarUrl function matching MessengerUI/LeftSidebar
+  const getAvatarUrl = (user: any) => {
+    const DEFAULT_AVATAR = '/default.jpg';
+    const API_BASE_URL = import.meta.env.VITE_API_URL;
+    if (!user) return DEFAULT_AVATAR;
+    let avatarUrl = user.avatarUrl || user.avatar || user.avatar_url;
+    if (!avatarUrl || typeof avatarUrl !== 'string' || avatarUrl.trim() === '') {
+      return DEFAULT_AVATAR;
+    }
+    if (avatarUrl === '/default.jpg') {
+      return avatarUrl;
+    }
+    const backendDefaults = [
+      '/media/avatars/default.jpeg',
+      '/media/avatars/default.jpg',
+      '/media/avatars/default.png',
+      'profile-default-icon-2048x2045-u3j7s5nj.png'
+    ];
+    for (const def of backendDefaults) {
+      if (avatarUrl.includes(def)) {
+        return DEFAULT_AVATAR;
+      }
+    }
+    if (avatarUrl.startsWith('http')) {
+      return avatarUrl;
+    }
+    if (avatarUrl.startsWith('/media')) {
+      return `${API_BASE_URL}${avatarUrl}`;
+    }
+    return `${API_BASE_URL}/media/${avatarUrl}`;
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -262,7 +294,7 @@ const AddMembersModal: React.FC<AddMembersModalProps> = ({
                     >
                       <div className="relative flex-shrink-0 mr-3">
                         <img
-                          src={user.avatar || user.avatar_url || '/default.jpg'}
+                          src={getAvatarUrl(user)}
                           alt={
                             (user.first_name && user.last_name)
                               ? `${user.first_name} ${user.last_name}`

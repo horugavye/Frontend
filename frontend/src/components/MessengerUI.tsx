@@ -236,30 +236,12 @@ const CreateGroupModal: FC<CreateGroupModalProps> = ({ isOpen, onClose, onCreate
       }
       
       const transformedUsers = usersData.map((user: any) => {
-        let avatar_url = user.avatar;
-        
-        // Handle avatar URL
-        if (avatar_url && typeof avatar_url === 'string' && avatar_url.trim() !== '') {
-          if (avatar_url.startsWith('http')) {
-            // Keep full URLs as is
-            avatar_url = avatar_url;
-          } else if (avatar_url.startsWith('/media')) {
-            // Handle paths starting with /media
-            avatar_url = `${API_BASE_URL}${avatar_url}`;
-          } else {
-            // Handle other paths
-            avatar_url = `${API_BASE_URL}/media/${avatar_url}`;
-          }
-        } else {
-          avatar_url = null;
-        }
-        
         return {
           id: user.id,
           username: user.username || user.email?.split('@')[0] || `user_${user.id}`,
           first_name: user.first_name || '',
           last_name: user.last_name || '',
-          avatar_url,
+          avatar_url: getAvatarUrl(user),
           is_online: user.is_online || false,
           last_seen: user.last_active,
           role: user.role || 'Member',
@@ -449,10 +431,10 @@ const CreateGroupModal: FC<CreateGroupModalProps> = ({ isOpen, onClose, onCreate
                   >
                     <div className="relative flex-shrink-0 mr-3">
                       <img
-                        src={user.avatar_url || '/default.jpg'}
+                        src={user.avatar_url || DEFAULT_AVATAR}
                         alt={`${user.first_name} ${user.last_name}`}
                         className="w-10 h-10 rounded-full"
-                        onError={e => { (e.target as HTMLImageElement).src = '/default.jpg'; }}
+                        onError={e => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR; }}
                       />
                       {user.is_online && (
                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-dark-card" />

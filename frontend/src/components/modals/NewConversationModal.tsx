@@ -47,29 +47,44 @@ const NewConversationModal: FC<NewConversationModalProps> = ({
         return;
       }
       
-      const transformedUsers = usersData.map((user: any) => {
-        let avatar_url = user.avatar;
-        
-        // Handle avatar URL
-        if (!avatar_url || typeof avatar_url !== 'string' || avatar_url.trim() === '') {
-          avatar_url = '/default.jpg';
-        } else if (avatar_url.startsWith('http')) {
-          // Keep full URLs as is
-          avatar_url = avatar_url;
-        } else if (avatar_url.startsWith('/media')) {
-          // Handle paths starting with /media
-          avatar_url = `${import.meta.env.VITE_API_URL}${avatar_url}`;
-        } else {
-          // Handle other paths
-          avatar_url = `${import.meta.env.VITE_API_URL}/media/${avatar_url}`;
+      const getAvatarUrl = (user: any) => {
+        const DEFAULT_AVATAR = '/default.jpg';
+        const API_BASE_URL = import.meta.env.VITE_API_URL;
+        if (!user) return DEFAULT_AVATAR;
+        let avatarUrl = user.avatarUrl || user.avatar || user.avatar_url;
+        if (!avatarUrl || typeof avatarUrl !== 'string' || avatarUrl.trim() === '') {
+          return DEFAULT_AVATAR;
         }
-        
+        if (avatarUrl === '/default.jpg') {
+          return avatarUrl;
+        }
+        const backendDefaults = [
+          '/media/avatars/default.jpeg',
+          '/media/avatars/default.jpg',
+          '/media/avatars/default.png',
+          'profile-default-icon-2048x2045-u3j7s5nj.png'
+        ];
+        for (const def of backendDefaults) {
+          if (avatarUrl.includes(def)) {
+            return DEFAULT_AVATAR;
+          }
+        }
+        if (avatarUrl.startsWith('http')) {
+          return avatarUrl;
+        }
+        if (avatarUrl.startsWith('/media')) {
+          return `${API_BASE_URL}${avatarUrl}`;
+        }
+        return `${API_BASE_URL}/media/${avatarUrl}`;
+      };
+      
+      const transformedUsers = usersData.map((user: any) => {
         return {
           id: user.id,
           first_name: user.first_name || '',
           last_name: user.last_name || '',
           username: user.username || '',
-          avatar: avatar_url
+          avatar: getAvatarUrl(user)
         };
       });
       
@@ -183,6 +198,7 @@ const NewConversationModal: FC<NewConversationModalProps> = ({
                         src={user.avatar}
                         alt={user.username}
                         className="w-10 h-10 rounded-full border-2 border-purple-400"
+                        onError={e => { (e.target as HTMLImageElement).src = '/default.jpg'; }}
                       />
                     </div>
                     <div className="flex-1 text-left">
