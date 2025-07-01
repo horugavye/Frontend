@@ -449,9 +449,10 @@ const CreateGroupModal: FC<CreateGroupModalProps> = ({ isOpen, onClose, onCreate
                   >
                     <div className="relative flex-shrink-0 mr-3">
                       <img
-                        src={user.avatar_url}
+                        src={user.avatar_url || '/default.jpg'}
                         alt={`${user.first_name} ${user.last_name}`}
                         className="w-10 h-10 rounded-full"
+                        onError={e => { (e.target as HTMLImageElement).src = '/default.jpg'; }}
                       />
                       {user.is_online && (
                         <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-dark-card" />

@@ -52,7 +52,7 @@ const NewConversationModal: FC<NewConversationModalProps> = ({
         
         // Handle avatar URL
         if (!avatar_url || typeof avatar_url !== 'string' || avatar_url.trim() === '') {
-          avatar_url = '/default.png';
+          avatar_url = '/default.jpg';
         } else if (avatar_url.startsWith('http')) {
           // Keep full URLs as is
           avatar_url = avatar_url;
