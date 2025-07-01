@@ -144,11 +144,11 @@ const StoriesBar: React.FC = () => {
                     className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-dark-card"
                   />
                 ) : (
-                  <div className="w-14 h-14 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center border-2 border-white dark:border-dark-card">
-                    <svg className="w-8 h-8 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                    </svg>
-                  </div>
+                  <img
+                    src="/default.jpg"
+                    alt="Default avatar"
+                    className="w-14 h-14 rounded-full object-cover border-2 border-white dark:border-dark-card"
+                  />
                 )}
               </div>
             </div>

@@ -26,10 +26,10 @@ const mockSkills = [
   ['JavaScript', 'Backend'],
 ];
 
-// Helper function to handle avatar URLs with fallback to /default.png
+// Helper function to handle avatar URLs with fallback to /default.jpg
 const getAvatarUrl = (avatarPath: string) => {
   if (avatarPath && avatarPath.startsWith('http')) return avatarPath;
-  return '/default.png';
+  return '/default.jpg';
 };
 
 const SuggestedFriends: FC = () => {
@@ -142,7 +142,7 @@ const SuggestedFriends: FC = () => {
                     alt={friend.name}
                     className="w-12 h-12 rounded-full object-cover border-2 border-purple-300 shadow-md"
                     loading="lazy"
-                    onError={e => { (e.target as HTMLImageElement).src = '/default.png'; }}
+                    onError={e => { (e.target as HTMLImageElement).src = '/default.jpg'; }}
                   />
                 </div>
                 <div className="flex-1 min-w-0">

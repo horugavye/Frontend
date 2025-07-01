@@ -1,6 +1,5 @@
 import { FC, useState, useEffect } from 'react';
 import { XMarkIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
-import { useTheme } from '../../context/ThemeContext';
 import axios from 'axios';
 
 interface User {
@@ -53,7 +52,7 @@ const NewConversationModal: FC<NewConversationModalProps> = ({
         
         // Handle avatar URL
         if (!avatar_url || typeof avatar_url !== 'string' || avatar_url.trim() === '') {
-          avatar_url = '/default.jpg';
+          avatar_url = '/default.png';
         } else if (avatar_url.startsWith('http')) {
           // Keep full URLs as is
           avatar_url = avatar_url;
@@ -63,11 +62,6 @@ const NewConversationModal: FC<NewConversationModalProps> = ({
         } else {
           // Handle other paths
           avatar_url = `${import.meta.env.VITE_API_URL}/media/${avatar_url}`;
-        }
-        
-        // Ensure we're not using the default avatar path in the URL
-        if (avatar_url.includes('profile-default-icon-2048x2045-u3j7s5nj.png')) {
-          avatar_url = '/default.jpg';
         }
         
         return {

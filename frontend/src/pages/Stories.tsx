@@ -43,6 +43,7 @@ import _ from 'lodash';
 import { getFileExtension, getFileCategory } from '../utils/fileUtils';
 import { Message } from '../types/messenger';
 import { useLocation } from 'react-router-dom';
+import ReactDOM from 'react-dom';
 
 interface Story {
   id: string;
@@ -437,12 +438,11 @@ const Stories: FC = () => {
       setLocalTotalRatings(storyToRate.totalRatings);
       setIsRatingModalOpen(true);
       setHoverRating(storyToRate.userRating || 0);
-      // Position the modal above the button
+      // Position the modal above the button using viewport coordinates
       if (modalRateButtonRef.current) {
         const rect = modalRateButtonRef.current.getBoundingClientRect();
-        // Offset for modal height (now just 8px above button)
         setRateModalPosition({
-          top: rect.top + window.scrollY - 8, // 8px above button
+          top: rect.top + window.scrollY, // align modal bottom with button top
           left: rect.left + window.scrollX + rect.width / 2,
         });
       }
@@ -988,7 +988,48 @@ const Stories: FC = () => {
           <div className="lg:col-span-3 order-1 lg:order-1">
             <div className="lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent dark:scrollbar-track-gray-800">
               <CardContainer>
-                <Navigation />
+                {/* Browse by Theme (responsive) */}
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">Browse by Theme</h3>
+                {/* Mobile: horizontal icon row */}
+                <div className="flex sm:hidden gap-2 justify-center mb-2">
+                  {themes.map((theme, idx) => {
+                    const Icon = theme.icon;
+                    return (
+                      <button
+                        key={theme.id + '-icon-' + idx}
+                        onClick={() => setSelectedTheme(theme.id)}
+                        aria-label={theme.name}
+                        className={`p-2 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-400 ${
+                          selectedTheme === theme.id
+                            ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 scale-110'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        <Icon className={`w-6 h-6 text-${theme.color}-500`} />
+                      </button>
+                    );
+                  })}
+                </div>
+                {/* Desktop: vertical icon+text list */}
+                <div className="hidden sm:block space-y-1 sm:space-y-2">
+                  {themes.map((theme, idx) => {
+                    const Icon = theme.icon;
+                    return (
+                      <button
+                        key={theme.id + '-' + idx}
+                        onClick={() => setSelectedTheme(theme.id)}
+                        className={`w-full flex items-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all duration-200 text-sm sm:text-base ${
+                          selectedTheme === theme.id
+                            ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
+                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 text-${theme.color}-500`} />
+                        {theme.name}
+                      </button>
+                    );
+                  })}
+                </div>
               </CardContainer>
             </div>
           </div>
@@ -1017,56 +1058,7 @@ const Stories: FC = () => {
           </div>
               </CardContainer>
 
-              {/* Theme Filter */}
-              <CardContainer>
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">Browse by Theme</h3>
-              <div className="space-y-1 sm:space-y-2">
-                {themes.map((theme, idx) => {
-                  const Icon = theme.icon;
-                  return (
-                    <button
-                      key={theme.id + '-' + idx}
-                      onClick={() => setSelectedTheme(theme.id)}
-                      className={`w-full flex items-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all duration-200 text-sm sm:text-base ${
-                        selectedTheme === theme.id
-                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                          : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
-                    >
-                      <Icon className={`w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3 text-${theme.color}-500`} />
-                      {theme.name}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">View Mode</h3>
-                <div className="space-y-1 sm:space-y-2">
-                  {[
-                    { id: 'chronological', name: 'Chronological', icon: ClockIcon },
-                    { id: 'thematic', name: 'By Topic', icon: SparklesIcon },
-                    { id: 'collaborative', name: 'Collaborative', icon: UsersIcon }
-                  ].map((mode, idx) => {
-                    const Icon = mode.icon;
-                    return (
-                      <button
-                        key={mode.id + '-' + idx}
-                        onClick={() => setViewMode(mode.id as any)}
-                        className={`w-full flex items-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all duration-200 text-sm sm:text-base ${
-                          viewMode === mode.id
-                            ? 'bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300'
-                            : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4 sm:w-5 sm:h-5 mr-2 sm:mr-3" />
-                        {mode.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              </CardContainer>
+              {/* Theme Filter removed from here */}
 
               {/* Story Viewer */}
               <CardContainer>
@@ -1970,14 +1962,15 @@ const Stories: FC = () => {
               </div>
             </div>
             {/* Rating Modal INSIDE story modal */}
-            {isRatingModalOpen && rateModalPosition && (
+            {isRatingModalOpen && rateModalPosition && ReactDOM.createPortal(
               <div className="fixed inset-0 z-50 bg-transparent" onClick={() => setIsRatingModalOpen(false)}>
                 <div
                   className="absolute"
                   style={{
-                    top: rateModalPosition.top,
+                    top: rateModalPosition.top - 24, // move 24px above the button
                     left: rateModalPosition.left,
                     transform: 'translate(-50%, -100%)',
+                    zIndex: 9999,
                   }}
                   onClick={e => e.stopPropagation()}
                 >
@@ -2024,7 +2017,8 @@ const Stories: FC = () => {
                     </div>
                   </div>
                 </div>
-              </div>
+              </div>,
+              document.body
             )}
           </div>
         </div>

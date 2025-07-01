@@ -262,13 +262,14 @@ const AddMembersModal: React.FC<AddMembersModalProps> = ({
                     >
                       <div className="relative flex-shrink-0 mr-3">
                         <img
-                          src={user.avatar || undefined}
-                          alt={`${user.first_name} ${user.last_name}`}
+                          src={user.avatar || user.avatar_url || '/default.jpg'}
+                          alt={
+                            (user.first_name && user.last_name)
+                              ? `${user.first_name} ${user.last_name}`
+                              : user.username || 'User'
+                          }
                           className="w-10 h-10 rounded-full"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                          }}
+                          onError={e => { (e.target as HTMLImageElement).src = '/default.jpg'; }}
                         />
                         {user.is_online && (
                           <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-dark-card" />
@@ -278,7 +279,9 @@ const AddMembersModal: React.FC<AddMembersModalProps> = ({
                         <p className={`text-sm font-medium truncate ${
                           isDarkMode ? 'text-dark-text' : 'text-gray-900'
                         }`}>
-                          {user.first_name} {user.last_name}
+                          {user.first_name || user.last_name
+                            ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                            : user.username || 'User'}
                         </p>
                         <p className={`text-xs truncate ${
                           isDarkMode ? 'text-gray-400' : 'text-gray-500'

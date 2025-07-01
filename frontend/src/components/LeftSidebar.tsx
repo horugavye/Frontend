@@ -57,15 +57,25 @@ interface LeftSidebarProps {
 }
 
 const DEFAULT_AVATAR = '/default.jpg';
-const DEFAULT_GROUP_AVATAR = '/media/group.png';
+const DEFAULT_GROUP_AVATAR = '/group.png';
 
 const getAvatarUrl = (user: any) => {
   const DEFAULT_AVATAR = '/default.jpg';
+  const DEFAULT_GROUP_AVATAR = '/group.png';
   const API_BASE_URL = import.meta.env.VITE_API_URL;
   if (!user) return DEFAULT_AVATAR;
+  // If it's a group object, use DEFAULT_GROUP_AVATAR as fallback
+  const isGroup = user && (
+    (user.members !== undefined) || // has members property
+    (user.name && !user.first_name && !user.last_name) // has name but not first/last name
+  );
   let avatarUrl = user.avatarUrl || user.avatar || user.avatar_url || user.user?.avatarUrl || user.user?.avatar || user.user?.avatar_url;
   if (!avatarUrl || typeof avatarUrl !== 'string' || avatarUrl.trim() === '') {
-    return DEFAULT_AVATAR;
+    return isGroup ? DEFAULT_GROUP_AVATAR : DEFAULT_AVATAR;
+  }
+  // If avatarUrl is a static asset in public (e.g. /group.png or /default.jpg), return as-is
+  if (avatarUrl === '/group.png' || avatarUrl === '/default.jpg') {
+    return avatarUrl;
   }
   // Check for backend default avatar paths
   const backendDefaults = [
@@ -76,7 +86,7 @@ const getAvatarUrl = (user: any) => {
   ];
   for (const def of backendDefaults) {
     if (avatarUrl.includes(def)) {
-      return DEFAULT_AVATAR;
+      return isGroup ? DEFAULT_GROUP_AVATAR : DEFAULT_AVATAR;
     }
   }
   if (avatarUrl.startsWith('http')) {

@@ -20,6 +20,7 @@ import { toast } from 'react-hot-toast';
 import DeleteGroupModal from './modals/DeleteGroupModal';
 import UpdateGroupModal from './modals/UpdateGroupModal';
 import AddMembersModal from './AddMembersModal';
+import { useNavigate } from 'react-router-dom';
 
 interface RightSidebarProps {
   selectedConversation: any;
@@ -31,9 +32,13 @@ interface RightSidebarProps {
   onDeleteConversation: () => void;
   setSelectedConversation: React.Dispatch<React.SetStateAction<any>>;
   onDeleteGroup: (groupId: string) => void;
+  setGroupMembers?: any;
+  fetchGroupMembers?: (groupId: string) => Promise<void>;
+  setConversations: React.Dispatch<React.SetStateAction<any[]>>;
+  setActiveConversation: React.Dispatch<React.SetStateAction<any>>;
 }
 
-const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMembers?: (groupId: string) => Promise<void> }> = ({
+const RightSidebar: FC<RightSidebarProps> = ({
   selectedConversation,
   isDarkMode,
   currentMessages,
@@ -45,6 +50,8 @@ const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMe
   onDeleteGroup,
   setGroupMembers,
   fetchGroupMembers,
+  setConversations,
+  setActiveConversation,
 }) => {
   if (!user) {
     return (
@@ -62,6 +69,7 @@ const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMe
   const [showAddMembersModal, setShowAddMembersModal] = useState(false);
   const [showUpdateGroupModal, setShowUpdateGroupModal] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!selectedMemberMenu) return;
@@ -315,7 +323,7 @@ const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMe
         console.log('Early return: Conversation ID not found');
         throw new Error('Conversation ID not found');
       }
-      const groupId = selectedConversation.group?.id;
+      const conversationId = selectedConversation.id;
       const currentUserMember = selectedConversation?.members?.find(
         (m: any) => m.id === user?.id || m.user?.id === user?.id
       );
@@ -329,13 +337,13 @@ const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMe
         toast.error('You cannot remove yourself from the group');
         return;
       }
-      const targetMember = groupId ? groupMembers[groupId]?.find((member) => (member.user?.id || member.id) === memberUserId) : undefined;
+      const targetMember = conversationId ? groupMembers[conversationId]?.find((member) => (member.user?.id || member.id) === memberUserId) : undefined;
       if (targetMember?.role === 'admin') {
         console.log('Early return: Tried to remove another admin', targetMember);
         toast.error('Admins cannot remove other admins');
         return;
       }
-      if (groupId) {
+      if (conversationId) {
         // Save previous state for rollback
         previousState = selectedConversation;
         setSelectedConversation((prev: typeof selectedConversation) => {
@@ -356,16 +364,6 @@ const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMe
           };
         });
         setSelectedMemberMenu(null);
-        // INSTANT UI UPDATE: Remove from groupMembers prop if setGroupMembers is provided
-        if (setGroupMembers && typeof setGroupMembers === 'function') {
-          setGroupMembers((prev: any) => {
-            if (!prev || !prev[groupId]) return prev;
-            return {
-              ...prev,
-              [groupId]: prev[groupId].filter((member: any) => (member.user?.id !== memberUserId && member.id !== memberUserId))
-            };
-          });
-        }
       }
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/chat/conversations/${selectedConversation.id}/remove_member/`,
@@ -392,14 +390,14 @@ const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMe
             }
           );
           if (convResponse.status === 200 && convResponse.data) {
-            // Use the latest groupMembers[groupId] if available for members
+            // Use the latest groupMembers[conversationId] if available for members
             setSelectedConversation((prev: typeof selectedConversation) => {
-              const groupId = prev?.group?.id;
+              const conversationId = prev?.id;
               let newMembers = prev?.members;
               let newGroupMembers = prev?.group?.members;
-              if (groupId && groupMembers && groupMembers[groupId]) {
-                newMembers = groupMembers[groupId];
-                newGroupMembers = groupMembers[groupId];
+              if (conversationId && groupMembers && groupMembers[conversationId]) {
+                newMembers = groupMembers[conversationId];
+                newGroupMembers = groupMembers[conversationId];
               }
               return {
                 ...prev,
@@ -417,8 +415,8 @@ const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMe
           console.error('Failed to fetch updated conversation:', fetchError);
         }
         // Refresh group members list from backend for consistency
-        if (fetchGroupMembers && groupId) {
-          await fetchGroupMembers(groupId);
+        if (fetchGroupMembers && conversationId) {
+          await fetchGroupMembers(conversationId);
         }
       } else {
         // Revert optimistic update if not 200
@@ -439,36 +437,69 @@ const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMe
     try {
       setIsUpdating(true);
       if (!selectedConversation?.id || !selectedConversation?.group?.id) {
+        console.error('Group ID not found', { selectedConversation });
         throw new Error('Group ID not found');
       }
+      // Use the group ID for the delete URL
       const groupId = selectedConversation.group.id;
-      const currentUserMember = groupMembers[groupId]?.find((member) => member.user?.id === user?.id);
+      const apiUrl = `${import.meta.env.VITE_API_URL}/api/chat/groups/${groupId}/`;
+      const conversationId = selectedConversation.id;
+      console.log('groupMembers[conversationId]:', groupMembers[conversationId]);
+      console.log('user:', user);
+      if (!user) {
+        console.error('User is not defined!');
+        toast.error('User is not defined!');
+        setIsUpdating(false);
+        setShowDeleteGroupModal(false);
+        return;
+      }
+      if (!groupMembers[conversationId] || groupMembers[conversationId].length === 0) {
+        console.error('No group members found for this group!');
+        toast.error('No group members found for this group!');
+        setIsUpdating(false);
+        setShowDeleteGroupModal(false);
+        return;
+      }
+      // Log all member ids for comparison
+      if (Array.isArray(groupMembers[conversationId])) {
+        groupMembers[conversationId].forEach((member, idx) => {
+          console.log(`Member[${idx}]:`, member, 'member.id:', member.id, 'role:', member.role);
+        });
+      }
+      // Use member.id instead of member.user?.id for admin check
+      const currentUserMember = groupMembers[conversationId]?.find((member) => member.id === user?.id);
+      console.log('Result of .find() for currentUserMember:', currentUserMember);
       const adminIdToSend = currentUserMember?.id || user.id;
+      console.log('Attempting to delete group:', groupId);
+      console.log('API URL:', apiUrl);
+      console.log('Current user:', user);
+      console.log('Current user member:', currentUserMember);
       if (!currentUserMember || currentUserMember.role !== 'admin') {
+        console.error('Only admins can delete the group', { currentUserMember });
         toast.error('Only admins can delete the group');
         return;
       }
-      console.log('Attempting to delete group:', selectedConversation.id);
-      const response = await axios.delete(
-        `${import.meta.env.VITE_API_URL}/api/chat/conversations/${selectedConversation.id}/`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      const headers = {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json'
+      };
+      console.log('Request headers:', headers);
+      const response = await axios.delete(apiUrl, { headers });
+      console.log('Delete group response:', response);
       if (response.status === 200 || response.status === 204) {
         toast.success('Group deleted successfully');
-        onDeleteGroup(selectedConversation.id);
+        // Instantly remove the group conversation from the UI
+        setConversations(prev => prev.filter(conv => conv.group?.id !== groupId));
+        setSelectedConversation(null);
+        setActiveConversation(null);
+        navigate('/messages');
         setShowDeleteGroupModal(false);
       } else {
         const errorMsg = `Unexpected response status: ${response.status} ${response.statusText || ''}`;
         toast.error(errorMsg);
         console.error(errorMsg, response);
       }
-    } catch (error: any) {
-      // Try to extract as much error info as possible
+    } catch (error) {
       let errorMessage = 'Failed to delete group. Please try again.';
       if (error.response) {
         errorMessage =
@@ -481,7 +512,7 @@ const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMe
       } else if (error.message) {
         errorMessage = error.message;
       }
-      toast.error(errorMessage);
+    
       console.error('Error deleting group:', error);
     } finally {
       setIsUpdating(false);
@@ -489,7 +520,14 @@ const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMe
     }
   };
 
-  const handleConfirmDeleteGroup = () => {
+  // Add this function to ensure group members are loaded before showing the delete modal
+  const handleConfirmDeleteGroup = async () => {
+    const conversationId = selectedConversation?.id;
+    if (conversationId && (!groupMembers[conversationId] || groupMembers[conversationId].length === 0)) {
+      if (fetchGroupMembers) {
+        await fetchGroupMembers(conversationId);
+      }
+    }
     setShowDeleteGroupModal(true);
   };
 
@@ -710,7 +748,7 @@ const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMe
               </span>
             </div>
             <div className="space-y-4">
-              {(groupMembers && selectedConversation?.group?.id && groupMembers[selectedConversation.group.id]
+              {(selectedConversation?.type === 'group' && groupMembers && selectedConversation?.group?.id && groupMembers[selectedConversation.group.id]
                 ? groupMembers[selectedConversation.group.id]
                 : selectedConversation?.members || []
               ).map((member: any) => {
@@ -890,7 +928,7 @@ const RightSidebar: FC<RightSidebarProps & { setGroupMembers?: any; fetchGroupMe
                 {/* Only show Delete Group button if current user is admin */}
                 {currentUserIsAdmin && (
                   <button
-                    onClick={() => setShowDeleteGroupModal(true)}
+                    onClick={handleConfirmDeleteGroup}
                     className={`w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
                       isDarkMode 
                         ? 'bg-red-600/20 text-red-300 hover:bg-red-600/30 active:bg-red-600/40' 

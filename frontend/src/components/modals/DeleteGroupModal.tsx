@@ -83,7 +83,16 @@ const DeleteGroupModal: FC<DeleteGroupModalProps> = ({
               Cancel
             </button>
             <button
-              onClick={() => { console.log('DeleteGroupModal onConfirm triggered'); onConfirm(); }}
+              onClick={() => {
+                console.group('DeleteGroupModal onConfirm triggered');
+                console.log('groupName:', groupName);
+                console.log('isOpen:', isOpen);
+                console.log('isDarkMode:', isDarkMode);
+                console.log('isDeleting:', isDeleting);
+                console.trace('Stack trace');
+                console.groupEnd();
+                onConfirm();
+              }}
               disabled={isDeleting}
               className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                 isDeleting 

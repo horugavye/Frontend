@@ -1269,13 +1269,14 @@ const ConnectionRequest: FC = () => {
                 src={friend.user.avatarUrl}
                 alt={friend.user.name}
                 className="w-16 h-16 rounded-full border-2 border-white dark:border-dark-border shadow-lg transition-all duration-500 group-hover/avatar:scale-105 group-hover/avatar:shadow-xl relative z-10"
+                onError={e => { (e.target as HTMLImageElement).src = '/default.jpg'; }}
               />
             ) : (
-              <div className="w-16 h-16 rounded-full border-2 border-white dark:border-dark-border shadow-lg transition-all duration-500 group-hover/avatar:scale-105 group-hover/avatar:shadow-xl relative z-10 bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                <svg className="w-8 h-8 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                </svg>
-              </div>
+              <img
+                src="/default.jpg"
+                alt="Default profile"
+                className="w-16 h-16 rounded-full border-2 border-white dark:border-dark-border shadow-lg transition-all duration-500 group-hover/avatar:scale-105 group-hover/avatar:shadow-xl relative z-10 bg-gray-300 dark:bg-gray-600 flex items-center justify-center"
+              />
             )}
             <span className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-dark-border z-20 transition-all duration-300 ${
               friend.user.lastActive === 'Online' ? 'bg-green-500 ring-2 ring-green-200 dark:ring-green-900' : 'bg-gray-400'
@@ -2101,13 +2102,14 @@ const ConnectionRequest: FC = () => {
                               src={friend.user.avatarUrl}
                               alt={friend.user.name}
                               className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white dark:border-dark-border transition-all duration-500 group-hover/avatar:scale-105 group-hover/avatar:shadow-xl relative z-10"
+                              onError={e => { (e.target as HTMLImageElement).src = '/default.jpg'; }}
                             />
                           ) : (
-                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white dark:border-dark-border transition-all duration-500 group-hover/avatar:scale-105 group-hover/avatar:shadow-xl relative z-10 bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                              <svg className="w-4 h-4 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                              </svg>
-                            </div>
+                            <img
+                              src="/default.jpg"
+                              alt="Default profile"
+                              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-white dark:border-dark-border transition-all duration-500 group-hover/avatar:scale-105 group-hover/avatar:shadow-xl relative z-10 bg-gray-300 dark:bg-gray-600 flex items-center justify-center"
+                            />
                           )}
                           <span className={`absolute bottom-0 right-0 w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full border-2 border-white dark:border-dark-border z-20 transition-all duration-300 ${
                             friend.user.lastActive === 'Online' ? 'bg-green-500 ring-2 ring-green-200 dark:ring-green-900' : 'bg-gray-400'

@@ -59,7 +59,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // Add API base URL configuration
 const DEFAULT_AVATAR = '/default.jpg';
-const DEFAULT_GROUP_AVATAR = '/media/group.png';
+const DEFAULT_GROUP_AVATAR = '/group.png';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -1259,11 +1259,18 @@ const MessengerUI = () => {
   };
 
   const getAvatarUrl = (user: any) => {
-    if (!user) return DEFAULT_AVATAR;
-    let avatarUrl = user.avatarUrl || user.avatar || user.avatar_url || 
-                   user.user?.avatarUrl || user.user?.avatar || user.user?.avatar_url;
+    // If it's a group object, use DEFAULT_GROUP_AVATAR as fallback
+    const isGroup = user && (
+      (user.members !== undefined) || // has members property
+      (user.name && !user.first_name && !user.last_name) // has name but not first/last name
+    );
+    let avatarUrl = user?.avatarUrl || user?.avatar || user?.avatar_url || user?.user?.avatarUrl || user?.user?.avatar || user?.user?.avatar_url;
     if (!avatarUrl || typeof avatarUrl !== 'string' || avatarUrl.trim() === '') {
-      return DEFAULT_AVATAR;
+      return isGroup ? DEFAULT_GROUP_AVATAR : DEFAULT_AVATAR;
+    }
+    // If avatarUrl is a static asset in public (e.g. /group.png or /default.jpg), return as-is
+    if (avatarUrl === '/group.png' || avatarUrl === '/default.jpg') {
+      return avatarUrl;
     }
     // Check for backend default avatar paths
     const backendDefaults = [
@@ -1274,7 +1281,7 @@ const MessengerUI = () => {
     ];
     for (const def of backendDefaults) {
       if (avatarUrl.includes(def)) {
-        return DEFAULT_AVATAR;
+        return isGroup ? DEFAULT_GROUP_AVATAR : DEFAULT_AVATAR;
       }
     }
     if (avatarUrl.startsWith('http')) {
@@ -1586,7 +1593,7 @@ const MessengerUI = () => {
               personality_tags: conv.participant1?.id === user?.id ? conv.participant2?.personality_tags : conv.participant1?.personality_tags || []
             } : null,
             group: conv.type === 'group' ? {
-              id: conv.group_id || conv.id,
+              id: conv.group?.id || null,
               name: conv.name || 'Unknown Group',
               acronym: conv.acronym || '',
               color: conv.color || '#6366f1',
@@ -1595,7 +1602,7 @@ const MessengerUI = () => {
               description: conv.description || '',
               avatarUrl: getAvatarUrl(conv.group)
             } : null,
-            group_id: conv.group_id || conv.id,
+            group_id: conv.group?.id || null,
             members: conv.members || []
           };
 
@@ -1606,6 +1613,10 @@ const MessengerUI = () => {
             currentUserUnreadCount,
             totalUnreadCount
           });
+
+          if (conv.type === 'group' && !conv.group_id) {
+            console.warn('[MessengerUI] Warning: group_id missing for group conversation', conv);
+          }
 
           return transformed;
         });
@@ -3198,35 +3209,40 @@ const MessengerUI = () => {
       const { group_id, conversation_id } = response.data;
       console.log('Extracted IDs:', { group_id, conversation_id, rawResponse: response.data });
       
-      // Create new conversation object
+      // Fetch the actual group members from the backend
+      const membersResponse = await api.get(`${API_BASE_URL}/api/chat/conversations/${conversation_id}/members/`);
+      const members = membersResponse.data.map((member: any) => ({
+        id: member.user.id,
+        name: `${member.user.first_name || ''} ${member.user.last_name || ''}`.trim() || member.user.username,
+        avatarUrl: member.user.avatar || DEFAULT_GROUP_AVATAR,
+        role: member.role || 'member',
+        isOnline: member.user.is_online || false,
+      }));
+
+      // Create new conversation object with real members count
       const newConversation = {
         id: conversation_id,
         type: 'group' as const,
         name: groupData.name,
+        lastMessage: null,
+        unreadCount: 0,
+        user: null,
         group: {
           id: group_id,
           name: groupData.name,
           acronym: groupData.name.substring(0, 2).toUpperCase(),
-          members: memberIds.length + 1, // +1 for creator
+          members: members.length,
           isActive: true,
           avatarUrl: DEFAULT_GROUP_AVATAR
-        }
+        },
+        members: members
       };
       
-      console.log('Created new conversation object:', newConversation);
-      
       // Update conversations state
-      setConversations(prev => {
-        const updatedConversations = [newConversation, ...prev];
-        console.log('Updated conversations state:', {
-          totalConversations: updatedConversations.length,
-          newConversation
-        });
-        return updatedConversations;
-      });
+      setConversations(prev => [newConversation, ...prev]);
+      setGroupMembers(prev => ({ ...prev, [group_id]: members }));
       
       // Select the new conversation
-      console.log('Selecting new conversation...');
       handleConversationSelect(newConversation);
       
       console.log('=== Group Creation Completed Successfully ===\n');
@@ -4130,7 +4146,7 @@ const MessengerUI = () => {
           })
           .map((user: any) => {
             // Handle avatar URL
-            let avatar_url = user.avatar;
+            let avatar_url = user.avatar_url || user.avatar || '';
             if (!avatar_url || typeof avatar_url !== 'string' || avatar_url.trim() === '') {
               avatar_url = DEFAULT_AVATAR;
             } else if (avatar_url.startsWith('http')) {
@@ -4365,16 +4381,25 @@ const MessengerUI = () => {
                 >
                   <div className="relative mr-3">
                     <img
-                      src={user.avatar_url}
-                      alt={`${user.first_name} ${user.last_name}`}
+                      src={user.avatar_url || DEFAULT_AVATAR}
+                      alt={
+                        (user.first_name && user.last_name)
+                          ? `${user.first_name} ${user.last_name}`
+                          : user.username || 'User'
+                      }
                       className="w-12 h-12 rounded-full"
+                      onError={e => { (e.target as HTMLImageElement).src = DEFAULT_AVATAR; }}
                     />
                     {user.is_online && (
                       <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-dark-card" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-200">{`${user.first_name} ${user.last_name}`}</div>
+                    <div className="font-medium text-gray-200">
+                      {user.first_name || user.last_name
+                        ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                        : user.username || 'User'}
+                    </div>
                     {user.bio && (
                       <p className={`text-sm mt-1 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                         {user.bio}
@@ -4532,7 +4557,7 @@ const MessengerUI = () => {
       isOpen={showDeleteGroupModal}
       onClose={() => setShowDeleteGroupModal(false)}
       onConfirm={() => {
-        handleDeleteGroup(selectedConversation.id);
+        handleDeleteGroup(selectedConversation.group.id);
         setShowDeleteGroupModal(false);
       }}
       groupName={selectedConversation.group.name}
@@ -4923,7 +4948,7 @@ const MessengerUI = () => {
               personality_tags: conv.participant1?.id === user?.id ? conv.participant2?.personality_tags : conv.participant1?.personality_tags || []
             } : null,
             group: conv.type === 'group' ? {
-              id: conv.group_id || conv.id,
+              id: conv.group?.id || null,
               name: conv.name || 'Unknown Group',
               acronym: conv.acronym || '',
               color: conv.color || '#6366f1',
@@ -4932,7 +4957,7 @@ const MessengerUI = () => {
               description: conv.description || '',
               avatarUrl: getAvatarUrl(conv.group)
             } : null,
-            group_id: conv.group_id || conv.id,
+            group_id: conv.group?.id || null,
             members: conv.members || []
           };
         });
@@ -4950,13 +4975,13 @@ const MessengerUI = () => {
   }, [activeConversation, selectedConversation, user]);
 
   // Add fetchGroupMembers function
-  const fetchGroupMembers = async (groupId: string) => {
+  const fetchGroupMembers = async (conversationId: string) => {
     try {
       const token = localStorage.getItem('access_token');
       if (!token) {
         throw new Error('No access token found');
       }
-      const response = await fetch(`${API_BASE_URL}/api/chat/groups/${groupId}/members/`, {
+      const response = await fetch(`${API_BASE_URL}/api/chat/conversations/${conversationId}/members/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -4974,10 +4999,10 @@ const MessengerUI = () => {
         role: member.role || 'member',
         isOnline: member.user.is_online || false,
       }));
-      setGroupMembers(prev => ({ ...prev, [groupId]: members }));
+      setGroupMembers(prev => ({ ...prev, [conversationId]: members }));
     } catch (error) {
       console.error('Error fetching group members:', error);
-      setGroupMembers(prev => ({ ...prev, [groupId]: [] }));
+      setGroupMembers(prev => ({ ...prev, [conversationId]: [] }));
     }
   };
 
@@ -5497,10 +5522,12 @@ const MessengerUI = () => {
               user={user}
               onImageClick={handleImageClick}
               onDeleteConversation={handleDeleteConversation}
-              setGroupMembers={setGroupMembers}
               setSelectedConversation={setSelectedConversation}
               onDeleteGroup={handleDeleteGroup}
+              setGroupMembers={setGroupMembers}
               fetchGroupMembers={fetchGroupMembers}
+              setConversations={setConversations}
+              setActiveConversation={setActiveConversation}
             />
           </div>
         )}
@@ -5591,7 +5618,7 @@ const MessengerUI = () => {
             isOpen={showDeleteGroupModal}
             onClose={() => setShowDeleteGroupModal(false)}
             onConfirm={() => {
-              handleDeleteGroup(selectedConversation.id);
+              handleDeleteGroup(selectedConversation.group.id);
               setShowDeleteGroupModal(false);
             }}
             groupName={selectedConversation.group.name}
