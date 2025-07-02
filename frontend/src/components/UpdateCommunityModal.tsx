@@ -274,41 +274,35 @@ const UpdateCommunityModal: FC<UpdateCommunityModalProps> = ({ isOpen, onClose, 
                 </label>
                 <div 
                   onClick={() => communityImageInputRef.current?.click()}
-                  className="relative aspect-square w-full border border-dashed border-gray-300 dark:border-dark-border rounded-2xl hover:border-purple-500 dark:hover:border-purple-500 cursor-pointer transition-all overflow-hidden group bg-gray-50 dark:bg-dark-card-hover hover:bg-gray-100 dark:hover:bg-dark-card-hover/80"
+                  className="relative aspect-[3/1] w-full border border-dashed border-gray-300 dark:border-dark-border rounded-2xl hover:border-purple-500 dark:hover:border-purple-500 cursor-pointer transition-all overflow-hidden group bg-gray-50 dark:bg-dark-card-hover hover:bg-gray-100 dark:hover:bg-dark-card-hover/80"
                 >
                   {communityImagePreview ? (
-                    typeof communityImagePreview === 'string' && communityImagePreview.length === 2 ? (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-blue-600 group-hover:from-purple-600 group-hover:to-blue-700 transition-all">
-                        <span className="text-4xl transform group-hover:scale-110 transition-transform">{communityImagePreview}</span>
+                    <div className="relative w-full h-full group-hover:opacity-90 transition-opacity">
+                      <img 
+                        src={communityImagePreview} 
+                        alt="Community image preview" 
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium">
+                          Change Image
+                        </span>
                       </div>
-                    ) : (
-                      <div className="relative w-full h-full group-hover:opacity-90 transition-opacity">
-                        <img 
-                          src={communityImagePreview} 
-                          alt="Community image preview" 
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                          <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity text-xs font-medium">
-                            Change Image
-                          </span>
-                        </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteImage('icon');
-                          }}
-                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                        >
-                          <XMarkIcon className="w-4 h-4" />
-                        </button>
-                      </div>
-                    )
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteImage('icon');
+                        }}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    </div>
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-400 dark:text-dark-text-secondary group-hover:text-purple-500 dark:group-hover:text-purple-400 transition-colors">
                       <PhotoIcon className="w-8 h-8 mb-1 transform group-hover:scale-110 transition-transform" />
                       <span className="text-xs font-medium">Upload image</span>
-                      <span className="text-[10px] mt-0.5">256x256px</span>
+                      <span className="text-[10px] mt-0.5">1200x400px</span>
                     </div>
                   )}
                   <input

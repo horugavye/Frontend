@@ -5,10 +5,10 @@ import SuggestedCommunities from '../components/aisuggested';
 import PostCard from '../components/PostCard';
 import { UserPlusIcon, ArrowPathIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
-// Helper function to handle avatar URLs with fallback to /default.png
+// Helper function to handle avatar URLs with fallback to /default.jpg
 const getAvatarUrl = (avatarPath: string) => {
   if (avatarPath && avatarPath.startsWith('http')) return avatarPath;
-  return '/default.png';
+  return '/default.jpg';
 };
 
 // Helper function to handle community icon URLs with fallback
@@ -166,7 +166,7 @@ const Research: React.FC = () => {
         const headers: HeadersInit = token ? { 'Authorization': `Bearer ${token}` } : {};
         
         // Fetch people
-        const peopleRes = await fetch(`/api/research/people/?search=${encodeURIComponent(query)}`, {
+        const peopleRes = await fetch(`${API_BASE_URL}/api/research/people/?search=${encodeURIComponent(query)}`, {
           credentials: 'include',
           headers,
         });
@@ -178,7 +178,7 @@ const Research: React.FC = () => {
           id: person.id,
           username: person.username,
           name: person.name,
-          avatarUrl: getAvatarUrl(person.avatarUrl),
+          avatarUrl: getAvatarUrl(person.avatarUrl || ''),
           role: person.role,
           personality_tags: person.personality_tags || [],
           connection_status: person.connection_status || 'connect',
@@ -197,7 +197,7 @@ const Research: React.FC = () => {
         setPersonStatus(initialStatus);
         
         // Fetch communities
-        const commRes = await fetch(`/api/communities/?search=${encodeURIComponent(query)}`, {
+        const commRes = await fetch(`${API_BASE_URL}/api/communities/?search=${encodeURIComponent(query)}`, {
           credentials: 'include',
           headers,
         });
@@ -219,7 +219,7 @@ const Research: React.FC = () => {
         setCommunities(transformedCommunities);
         
         // Fetch posts
-        const postsRes = await fetch(`/api/posts/?search=${encodeURIComponent(query)}`, {
+        const postsRes = await fetch(`${API_BASE_URL}/api/posts/?search=${encodeURIComponent(query)}`, {
           credentials: 'include',
           headers,
         });
@@ -625,7 +625,7 @@ const Research: React.FC = () => {
                                 src={item.avatarUrl} 
                                 alt={item.name} 
                                 className="w-12 h-12 rounded-full mr-4"
-                                onError={(e) => { (e.target as HTMLImageElement).src = '/default.png'; }}
+                                onError={(e) => { (e.target as HTMLImageElement).src = '/default.jpg'; }}
                               />
                               <div className="flex-1">
                                 <div 
@@ -811,7 +811,7 @@ const Research: React.FC = () => {
                             content={item.snippet}
                             author={{
                               name: item.author?.name || "",
-                              avatarUrl: getAvatarUrl(item.author?.avatarUrl || ""),
+                              avatarUrl: getAvatarUrl(item.author?.avatarUrl || ''),
                               personalityTags: item.author?.personality_tags || [],
                               role: item.author?.role || "",
                               username: item.author?.username || ""
@@ -886,7 +886,7 @@ const Research: React.FC = () => {
                                 src={item.avatarUrl} 
                                 alt={item.name} 
                                 className="w-12 h-12 rounded-full mr-4"
-                                onError={(e) => { (e.target as HTMLImageElement).src = '/default.png'; }}
+                                onError={(e) => { (e.target as HTMLImageElement).src = '/default.jpg'; }}
                               />
                               <div className="flex-1">
                                 <div 
@@ -1071,7 +1071,7 @@ const Research: React.FC = () => {
                           content={item.snippet}
                           author={{
                             name: item.author?.name || "",
-                            avatarUrl: getAvatarUrl(item.author?.avatarUrl || ""),
+                            avatarUrl: getAvatarUrl(item.author?.avatarUrl || ''),
                             personalityTags: item.author?.personality_tags || [],
                             role: item.author?.role || "",
                             username: item.author?.username || ""

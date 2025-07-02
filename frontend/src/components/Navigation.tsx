@@ -43,7 +43,7 @@ const Navigation: FC = () => {
           id: community.id,
           slug: community.slug,
           name: community.name,
-          icon: community.icon || '🌟',
+          icon: community.icon || '/default_community_icon.png',
         }));
         setUserCommunities(communities);
       } catch (err) {
@@ -149,7 +149,7 @@ const Navigation: FC = () => {
                       className={`flex items-center px-4 py-2 rounded-lg transition-all duration-200 text-gray-700 dark:text-gray-200 hover:text-purple-700 dark:hover:text-purple-300 hover:bg-gray-100 dark:hover:bg-gray-800`}
                     >
                       <span className="w-6 h-6 mr-3 flex items-center justify-center text-lg">
-                        {community.icon.startsWith('http') ? (
+                        {community.icon.startsWith('http') || community.icon.startsWith('/') ? (
                           <img 
                             src={community.icon} 
                             alt={community.name} 
@@ -161,7 +161,11 @@ const Navigation: FC = () => {
                             }}
                           />
                         ) : (
-                          community.icon
+                          <img 
+                            src={'/default_community_icon.png'}
+                            alt={community.name}
+                            className="w-6 h-6 rounded-full object-cover"
+                          />
                         )}
                       </span>
                       <span className="truncate">{community.name}</span>

@@ -344,7 +344,7 @@ const Communities: FC = () => {
                     >
                       <div className="h-32 relative">
                         <img
-                          src={community.bannerUrl}
+                          src={community.bannerUrl || '/default_community_banner.png'}
                           alt={community.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -353,7 +353,18 @@ const Communities: FC = () => {
                           }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                        <div className="absolute left-4 bottom-4 z-10">
+                          <img
+                            src={community.icon || '/default_community_icon.png'}
+                            alt="Community Icon"
+                            className="w-12 h-12 rounded-full border-4 border-white dark:border-gray-800 bg-white object-cover shadow-lg"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/default_community_icon.png';
+                            }}
+                          />
+                        </div>
+                        <div className="absolute bottom-4 left-24 right-4 flex items-center justify-between">
                           <h3 className="text-lg font-medium text-white">{community.name}</h3>
                           <div className="flex items-center gap-2">
                             <span className="text-green-400 text-sm flex items-center gap-1 bg-black/30 px-2 py-1 rounded-full">
@@ -407,7 +418,7 @@ const Communities: FC = () => {
                     >
                       <div className="h-32 relative">
                         <img
-                          src={community.bannerUrl}
+                          src={community.bannerUrl || '/default_community_banner.png'}
                           alt={community.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -416,7 +427,18 @@ const Communities: FC = () => {
                           }}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                        <div className="absolute left-4 bottom-4 z-10">
+                          <img
+                            src={community.icon || '/default_community_icon.png'}
+                            alt="Community Icon"
+                            className="w-12 h-12 rounded-full border-4 border-white dark:border-gray-800 bg-white object-cover shadow-lg"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/default_community_icon.png';
+                            }}
+                          />
+                        </div>
+                        <div className="absolute bottom-4 left-24 right-4 flex items-center justify-between">
                           <h3 className="text-lg font-medium text-white">{community.name}</h3>
                           <div className="flex items-center gap-2">
                             <span className="text-green-400 text-sm flex items-center gap-1 bg-black/30 px-2 py-1 rounded-full">
